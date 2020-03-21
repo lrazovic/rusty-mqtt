@@ -1,4 +1,6 @@
 use serde::Serialize;
+use std::env;
+use log::info;
 
 #[derive(Serialize)]
 struct MeteoStation {
@@ -28,5 +30,12 @@ impl MeteoStation {
 }
 
 fn main() {
+    // Loger Initialization
+    env::set_var(
+        "RUST_LOG",
+        env::var_os("RUST_LOG").unwrap_or_else(|| "info".into()),
+    );
+    env_logger::init();
+
     let device = MeteoStation::new(1., 2, 3, 4, 5);
 }
