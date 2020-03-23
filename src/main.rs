@@ -83,17 +83,21 @@ fn main() {
                 .help("Number of devices to spawn"),
         )
         .get_matches();
-    let server_addr = matches.value_of("SERVER").unwrap();
-    let server_port = matches.value_of("PORT").unwrap();
-    let host = format!("{}:{}", server_addr, server_port);
-    let client_id = matches
-        .value_of("CLIENT_ID")
-        .map(|x| x.to_owned())
-        .unwrap_or_else(generate_client_id);
-    let user_name = matches
-        .value_of("USER_NAME")
-        .map(|x| x.to_owned())
-        .unwrap_or(String::from("anon"));
+        let server_addr = matches.value_of("SERVER").unwrap();
+        let server_port = matches.value_of("PORT").unwrap();
+        let host = format!("{}:{}", server_addr, server_port);
+        let topic_name = matches.value_of("TOPIC").map(|x| x.to_owned()).unwrap();
+        let client_id = matches
+            .value_of("CLIENT_ID")
+            .map(|x| x.to_owned())
+            .unwrap_or_else(generate_client_id);
+        let user_name = matches.value_of("USER_NAME").map(|x| x.to_owned()).unwrap();
+        let number: i32 = matches
+            .value_of("NUMBER")
+            .map(|x| x.to_owned())
+            .unwrap()
+            .parse()
+            .unwrap();
 
     info!("Connecting to {:?} ... ", host);
     info!("Client identifier {:?}", client_id);
