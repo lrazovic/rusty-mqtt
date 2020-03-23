@@ -34,6 +34,18 @@ fn generate_client_id() -> String {
     format!("{}", Uuid::new_v4())
 }
 
+fn publish(stream: &mut TcpStream, msg: String, topic: TopicName) {
+    let packet = PublishPacket::new(
+        topic.clone(),
+        QoSWithPacketIdentifier::Level1(10),
+        msg.clone(),
+    );
+    let mut buf = Vec::new();
+    packet.encode(&mut buf).unwrap();
+    stream.write_all(&buf[..]).unwrap();
+    info!("Message: {} sent on Topic: {:?}", msg, topic);
+}
+
 fn main() {
     // Loger Initialization
     env::set_var(
@@ -127,4 +139,14 @@ fn main() {
         );
     }
     info!("Successfully connected to {:?}", host);
+    
+    //Connect Gateway and Devices
+    for i in 0..number {
+        let device_name = format!("station_{}", i);
+        let device = Device::new(device_name);
+        let message = serde_json::to_string(&device).unwrap();
+        let connection_topic = TopicName::new("v1/Device/connect").unwrap();
+        publish(&mut stream, message, connection_topic);
+        info!("Gateway and Device {} connected!", i);
+    }
 }
