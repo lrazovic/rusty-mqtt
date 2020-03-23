@@ -62,6 +62,7 @@ fn main() {
             Arg::with_name("USER_NAME")
                 .short("u")
                 .long("username")
+                .required(true)
                 .takes_value(true)
                 .help("Login user name"),
         )
@@ -72,6 +73,14 @@ fn main() {
                 .default_value("1883")
                 .takes_value(true)
                 .help("Server's port"),
+        )
+        .arg(
+            Arg::with_name("NUMBER")
+                .short("n")
+                .long("number")
+                .default_value("2")
+                .takes_value(true)
+                .help("Number of devices to spawn"),
         )
         .get_matches();
     let server_addr = matches.value_of("SERVER").unwrap();
