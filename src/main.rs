@@ -4,10 +4,14 @@ use mqtt::control::variable_header::ConnectReturnCode;
 use mqtt::packet::*;
 use mqtt::TopicName;
 use mqtt::{Decodable, Encodable};
+use rand::prelude::*;
 use serde::Serialize;
+use std::collections::HashMap;
 use std::env;
 use std::io::Write;
 use std::net::TcpStream;
+use std::thread;
+use std::time::Duration;
 use uuid::Uuid;
 
 #[derive(Serialize)]
@@ -32,6 +36,16 @@ impl Device {
 
 fn generate_client_id() -> String {
     format!("{}", Uuid::new_v4())
+}
+
+fn generate_packet(mut rng: ThreadRng) -> Sensors {
+    Sensors {
+        humidity: rng.gen_range(0, 100),
+        rain_height: rng.gen_range(0, 50),
+        temperature: rng.gen_range(-50.0, 50.0),
+        wind_direction: rng.gen_range(0, 359),
+        wind_intensity: rng.gen_range(0, 100),
+    }
 }
 
 fn publish(stream: &mut TcpStream, msg: String, topic: TopicName) {
@@ -139,7 +153,7 @@ fn main() {
         );
     }
     info!("Successfully connected to {:?}", host);
-    
+
     //Connect Gateway and Devices
     for i in 0..number {
         let device_name = format!("station_{}", i);
@@ -148,5 +162,20 @@ fn main() {
         let connection_topic = TopicName::new("v1/Device/connect").unwrap();
         publish(&mut stream, message, connection_topic);
         info!("Gateway and Device {} connected!", i);
+    }
+
+    // Create and publish random data on the given Topic
+    let rng = thread_rng();
+    let topic = TopicName::new(topic_name).unwrap();
+    let mut map = HashMap::new();
+    loop {
+        for i in 0..number {
+            let key = format!("station_{}", i);
+            let message = generate_packet(rng);
+            map.insert(key, message);
+        }
+        let serialized_map = serde_json::to_string(&map).unwrap();
+        publish(&mut stream, serialized_map, topic.clone());
+        thread::sleep(Duration::from_secs(5))
     }
 }
