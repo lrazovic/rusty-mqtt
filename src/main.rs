@@ -22,7 +22,7 @@ fn main() {
     env_logger::init();
 
     // Parse arguments from CLI
-    let matches = App::new("MQTT")
+    let matches = App::new("rusty-mqtt")
         .author("Leonardo Razovic <lrazovic@gmail.com>")
         .version("0.1")
         .arg(
@@ -40,7 +40,7 @@ fn main() {
                 .long("topic")
                 .takes_value(true)
                 .required(true)
-                .help("Topicr to subscribe"),
+                .help("Topic to subscribe"),
         )
         .arg(
             Arg::with_name("USER_NAME")
