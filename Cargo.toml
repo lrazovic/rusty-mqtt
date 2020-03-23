@@ -13,3 +13,4 @@ log = "0.4.8"
 env_logger = "0.7.1"
 uuid = { version = "0.8.1", features = ["v4"] }
 clap = "2.33.0"
+mqtt-protocol = "0.8.1"
