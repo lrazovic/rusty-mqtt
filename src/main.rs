@@ -174,8 +174,8 @@ fn main() {
             let message = generate_packet(rng);
             map.insert(key, message);
         }
-        let serialized_map = serde_json::to_string(&map).unwrap();
-        publish(&mut stream, serialized_map, topic.clone());
+        let serialized_message = serde_json::to_string(&map).unwrap();
+        publish(&mut stream, serialized_message, topic.clone());
         thread::sleep(Duration::from_secs(5))
     }
 }
