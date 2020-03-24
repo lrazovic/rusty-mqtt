@@ -1,3 +1,4 @@
+use log::info;
 use mqtt::packet::{PublishPacket, QoSWithPacketIdentifier};
 use mqtt::Encodable;
 use mqtt::TopicName;
@@ -51,5 +52,5 @@ pub fn publish(stream: &mut TcpStream, msg: String, topic: TopicName) {
     let mut buf = Vec::new();
     packet.encode(&mut buf).unwrap();
     stream.write_all(&buf[..]).unwrap();
-    println!("Message: {} sent on Topic: {:?}", msg, topic);
+    info!("Message: {} sent on Topic: {:?}", msg, topic);
 }
