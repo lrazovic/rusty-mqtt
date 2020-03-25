@@ -1,6 +1,10 @@
 # rusty-mqtt
 A simple MQTT Publisher written in Rust
 
+## Prerequisites
+1. Rust, you can install it using [rustup](https://rustup.rs/)
+2. [ThingsBoard](https://thingsboard.io/docs/user-guide/install/installation-options/)
+
 ## Usage
 ```
 USAGE:
@@ -17,7 +21,10 @@ OPTIONS:
     -u, --username <USER_NAME>       Gateway ACCESS_TOKEN
 ```
 ### Example
+
+```
 $ cargo run -- -s "0.0.0.0" -u "fG9zwdYO83B2DjWyniN2" -n 4
+```
 
 ## Blog Post
 On [Medium](https://medium.com/@LRazovic/mqtt-protocol-using-thingsboard-rust-and-react-9f0434bd206e)
