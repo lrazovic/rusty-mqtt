@@ -35,14 +35,6 @@ fn main() {
                 .help("MQTT server address"),
         )
         .arg(
-            Arg::with_name("TOPIC")
-                .short("t")
-                .long("topic")
-                .takes_value(true)
-                .required(true)
-                .help("Topic to subscribe"),
-        )
-        .arg(
             Arg::with_name("USER_NAME")
                 .short("u")
                 .long("username")
@@ -70,7 +62,6 @@ fn main() {
     let server_addr = matches.value_of("SERVER").unwrap();
     let server_port = matches.value_of("PORT").unwrap();
     let host = format!("{}:{}", server_addr, server_port);
-    let topic_name = matches.value_of("TOPIC").map(|x| x.to_owned()).unwrap();
     let client_id = matches
         .value_of("CLIENT_ID")
         .map(|x| x.to_owned())
@@ -119,16 +110,25 @@ fn main() {
 
     // Create and publish random data on the given Topic
     let rng = thread_rng();
-    let topic = TopicName::new(topic_name).unwrap();
-    let mut map = HashMap::new();
+    let telemtry_topic = TopicName::new("v1/gateway/telemetry").unwrap();
+    let attribute_topic = TopicName::new("v1/gateway/attributes").unwrap();
+    let mut telemetry = HashMap::new();
+    let mut attributes = HashMap::new();
     loop {
         for i in 0..devices_number {
+            let mut vector_values = Vec::new();
             let key = format!("station_{}", i);
-            let value = utils::generate_packet(rng);
-            map.insert(key, value);
+            let values = utils::generate_packet(rng);
+            let sensor_telemetry = utils::generate_telemtry_packet(&values);
+            let sensor_attributes = utils::generate_attribute_packet(&values);
+            vector_values.push(sensor_telemetry);
+            telemetry.insert(key.clone(), vector_values);
+            attributes.insert(key, sensor_attributes);
         }
-        let serialized_message = serde_json::to_string(&map).unwrap();
-        utils::publish(&mut stream, serialized_message, topic.clone());
+        let serialized_telemetry = serde_json::to_string(&telemetry).unwrap();
+        let serialized_attributes = serde_json::to_string(&attributes).unwrap();
+        utils::publish(&mut stream, serialized_telemetry, telemtry_topic.clone());
+        utils::publish(&mut stream, serialized_attributes, attribute_topic.clone());
         thread::sleep(Duration::from_secs(5))
     }
 }
