@@ -2,6 +2,7 @@
 A simple MQTT Publisher written in Rust
 
 ## Usage
+```
 USAGE:
     rusty-mqtt [OPTIONS] --server <SERVER> --username <USER_NAME>
 
@@ -14,7 +15,7 @@ OPTIONS:
     -p, --port <PORT>                Server's port [default: 1883]
     -s, --server <SERVER>            MQTT server address [default: 0.0.0.0]
     -u, --username <USER_NAME>       Gateway ACCESS_TOKEN
-
+```
 ### Example
 $ cargo run -- -s "0.0.0.0" -u "fG9zwdYO83B2DjWyniN2" -n 4
 
