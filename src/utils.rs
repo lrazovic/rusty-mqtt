@@ -21,7 +21,7 @@ impl Device {
 }
 
 #[derive(Serialize)]
-pub struct Sensors {
+pub struct Sensor {
     temperature: f32,
     humidity: i16,
     rain_height: i16,
@@ -29,12 +29,13 @@ pub struct Sensors {
     wind_intensity: i16,
 }
 
+// Client ID generation using UUID version 4
 pub fn generate_client_id() -> String {
     format!("{}", Uuid::new_v4())
 }
-
-pub fn generate_packet(mut rng: ThreadRng) -> Sensors {
-    Sensors {
+// Random values generation  
+pub fn generate_packet(mut rng: ThreadRng) -> Sensor {
+    Sensor {
         humidity: rng.gen_range(0, 100),
         rain_height: rng.gen_range(0, 50),
         temperature: rng.gen_range(-50.0, 50.0),
@@ -44,11 +45,13 @@ pub fn generate_packet(mut rng: ThreadRng) -> Sensors {
 }
 
 pub fn publish(stream: &mut TcpStream, msg: String, topic: TopicName) {
+    // MQTT PUBLISH packet creation
     let packet = PublishPacket::new(
         topic.clone(),
         QoSWithPacketIdentifier::Level1(10),
         msg.clone(),
     );
+    // Encode and Write the packet on the TcpStream
     let mut buf = Vec::new();
     packet.encode(&mut buf).unwrap();
     stream.write_all(&buf[..]).unwrap();

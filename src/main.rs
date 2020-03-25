@@ -61,7 +61,7 @@ fn main() {
         .arg(
             Arg::with_name("NUMBER")
                 .short("n")
-                .long("number")
+                .long("devices_number")
                 .default_value("2")
                 .takes_value(true)
                 .help("Number of devices to spawn"),
@@ -76,7 +76,7 @@ fn main() {
         .map(|x| x.to_owned())
         .unwrap_or_else(utils::generate_client_id);
     let user_name = matches.value_of("USER_NAME").map(|x| x.to_owned()).unwrap();
-    let number: i32 = matches
+    let devices_number: i32 = matches
         .value_of("NUMBER")
         .map(|x| x.to_owned())
         .unwrap()
@@ -108,12 +108,12 @@ fn main() {
     info!("Successfully connected to {:?}", host);
 
     //Connect Gateway and Devices
-    for i in 0..number {
+    let connection_topic = TopicName::new("v1/gateway/connect").unwrap();
+    for i in 0..devices_number {
         let device_name = format!("station_{}", i);
         let device = utils::Device::new(device_name);
         let message = serde_json::to_string(&device).unwrap();
-        let connection_topic = TopicName::new("v1/Device/connect").unwrap();
-        utils::publish(&mut stream, message, connection_topic);
+        utils::publish(&mut stream, message, connection_topic.clone());
         info!("Gateway and Device {} connected!", i);
     }
 
@@ -122,7 +122,7 @@ fn main() {
     let topic = TopicName::new(topic_name).unwrap();
     let mut map = HashMap::new();
     loop {
-        for i in 0..number {
+        for i in 0..devices_number {
             let key = format!("station_{}", i);
             let message = utils::generate_packet(rng);
             map.insert(key, message);
