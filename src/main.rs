@@ -124,8 +124,8 @@ fn main() {
     loop {
         for i in 0..devices_number {
             let key = format!("station_{}", i);
-            let message = utils::generate_packet(rng);
-            map.insert(key, message);
+            let value = utils::generate_packet(rng);
+            map.insert(key, value);
         }
         let serialized_message = serde_json::to_string(&map).unwrap();
         utils::publish(&mut stream, serialized_message, topic.clone());
