@@ -40,7 +40,7 @@ fn main() {
                 .long("username")
                 .required(true)
                 .takes_value(true)
-                .help("Login user name"),
+                .help("Gateway ACCESS_TOKEN"),
         )
         .arg(
             Arg::with_name("PORT")
