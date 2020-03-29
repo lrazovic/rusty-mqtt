@@ -24,7 +24,7 @@ fn main() {
     // Parse arguments from CLI
     let matches = App::new("rusty-mqtt")
         .author("Leonardo Razovic <lrazovic@gmail.com>")
-        .version("0.1")
+        .version("0.2")
         .arg(
             Arg::with_name("SERVER")
                 .short("s")
