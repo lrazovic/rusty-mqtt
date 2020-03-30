@@ -8,6 +8,7 @@ use mqtt::{Decodable, Encodable, QualityOfService};
 use std::env;
 use std::io::Write;
 use std::net;
+// use std::net::UdpSocket;
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 use std::str;
 use std::time::Duration;
@@ -57,14 +58,6 @@ async fn main() {
                 .takes_value(true)
                 .help("Server's port"),
         )
-        .arg(
-            Arg::with_name("NUMBER")
-                .short("n")
-                .long("devices_number")
-                .default_value("2")
-                .takes_value(true)
-                .help("Number of devices to spawn"),
-        )
         .get_matches();
     let server_addr = matches.value_of("SERVER").unwrap();
     let server_port: u16 = matches.value_of("PORT").unwrap().parse().unwrap();
@@ -86,7 +79,7 @@ async fn main() {
     //Opens a TCP connection to ThingsBoard.
     let mut thingsboard_stream = net::TcpStream::connect(&host).unwrap();
 
-    // Create and Send an initial MQTT CONNECT packet to Thingsboard.
+    // Create and Send an initial MQTT CONNECT packet to RSMB.
     let mut conn = ConnectPacket::new("MQTT", client_id.clone());
     conn.set_clean_session(true);
     conn.set_keep_alive(10);
@@ -104,6 +97,8 @@ async fn main() {
         );
     }
 
+    info!("Successfully connected to RSMB @ [{}]:{}", ipv6_addr, 1888);
+
     // Create and Send an initial MQTT CONNECT packet to Thingsboard.
     let mut conn = ConnectPacket::new("MQTT", client_id);
     conn.set_clean_session(true);
@@ -120,7 +115,7 @@ async fn main() {
             connack.connect_return_code()
         );
     }
-    info!("Successfully connected to {:?}", host);
+    info!("Successfully connected to Thingsboard @ {}", host);
 
     let mut channel_filters: Vec<(TopicFilter, QualityOfService)> = Vec::new();
     channel_filters.push((
@@ -178,7 +173,8 @@ async fn main() {
                 VariablePacket::PingrespPacket(..) => {
                     info!("Receiving PINGRESP from broker ..");
                 }
-                VariablePacket::PublishPacket(ref publ) => {
+                VariablePacket::PublishPacket(publ) => {
+                    /*
                     let msg = match str::from_utf8(&publ.payload_ref()[..]) {
                         Ok(msg) => msg,
                         Err(err) => {
@@ -186,10 +182,12 @@ async fn main() {
                             continue;
                         }
                     };
-                    info!("RECV on Topic ({}): {}", publ.topic_name(), msg);
-                    let telemtry_topic = TopicName::new("v1/devices/me/telemetry").unwrap();
-                    let value = format!("{{\"temperature\": \"{}\"}}", msg);
-                    utils::publish(&mut thingsboard_stream, value, telemtry_topic.clone());
+                    */
+                    let msg = publ.payload();
+                    info!("RECV on Topic : {:?}", msg);
+                    //let telemtry_topic = TopicName::new("v1/devices/me/telemetry").unwrap();
+                    //let value = format!("{{\"temperature\": \"{}\"}}", msg);
+                    //utils::publish(&mut thingsboard_stream, value, telemtry_topic.clone());
                 }
                 _ => {}
             }
