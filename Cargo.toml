@@ -13,5 +13,6 @@ log = "0.4.8"
 env_logger = "0.7.1"
 uuid = { version = "0.8.1", features = ["v4"] }
 clap = "2.33.0"
-mqtt-protocol = "0.8.1"
-rand = "0.7.3"
+mqtt-protocol = { version = "0.8.1", features = ["async"] }
+tokio = { version = "0.2.13", features = ["full"] }
+futures = "0.3.4"
