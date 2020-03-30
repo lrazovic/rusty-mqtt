@@ -47,7 +47,7 @@ async fn main() {
                 .default_value("dyGTnPixbX1WiOsP92DT")
                 .required(true)
                 .takes_value(true)
-                .help("Login user name"),
+                .help("Gateway ACCESS_TOKEN"),
         )
         .arg(
             Arg::with_name("PORT")
