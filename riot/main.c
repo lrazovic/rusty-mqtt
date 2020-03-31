@@ -210,12 +210,12 @@ static int f_pub(int argc, char **argv)
 
     while (1)
     {
-        int temperature = random_uint32_range(0, 50);
-        int h = random_uint32_range(0, 50);
-        int ws = random_uint32_range(0, 50);
-        int wi = random_uint32_range(0, 50);
+        int temperature = random_uint32_range(0, 100);
+        int h = random_uint32_range(0, 100);
+        int wd = random_uint32_range(0, 360);
+        int wi = random_uint32_range(0, 100);
         int rh = random_uint32_range(0, 50);
-        char values[5] = {temperature, h, ws, wi, rh};
+        char values[5] = {temperature, h, wd, wi, rh};
         /* step 2: publish data */
         if (emcute_pub(&t, values, sizeof(values), flags) != EMCUTE_OK)
         {
@@ -334,7 +334,7 @@ static const shell_command_t shell_commands[] = {
     {"con", "connect to MQTT broker", cmd_con},
     {"discon", "disconnect from the current broker", cmd_discon},
     {"pub", "publish something", cmd_pub},
-    {"fpub", "publish something", f_pub},
+    {"fpub", "publish random data", f_pub},
     {"sub", "subscribe topic", cmd_sub},
     {"unsub", "unsubscribe from topic", cmd_unsub},
     {"will", "register a last will", cmd_will},
