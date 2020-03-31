@@ -8,9 +8,7 @@ use mqtt::{Decodable, Encodable, QualityOfService};
 use std::env;
 use std::io::Write;
 use std::net;
-// use std::net::UdpSocket;
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
-use std::str;
 use std::time::Duration;
 
 use futures::join;
@@ -45,10 +43,17 @@ async fn main() {
             Arg::with_name("USER_NAME")
                 .short("u")
                 .long("username")
-                .default_value("dyGTnPixbX1WiOsP92DT")
                 .required(true)
                 .takes_value(true)
-                .help("Gateway ACCESS_TOKEN"),
+                .help("Device ACCESS_TOKEN"),
+        )
+        .arg(
+            Arg::with_name("TOPIC")
+                .short("t")
+                .long("topic")
+                .required(true)
+                .takes_value(true)
+                .help("Topic to subscribe"),
         )
         .arg(
             Arg::with_name("PORT")
@@ -59,18 +64,33 @@ async fn main() {
                 .help("Server's port"),
         )
         .get_matches();
+    // ThingsBoard server address, default is localhost.
     let server_addr = matches.value_of("SERVER").unwrap();
+
+    // ThingsBoard port address, default is 1883
     let server_port: u16 = matches.value_of("PORT").unwrap().parse().unwrap();
     let host = format!("{}:{}", server_addr, server_port);
+
     let client_id = matches
         .value_of("CLIENT_ID")
         .map(|x| x.to_owned())
         .unwrap_or_else(utils::generate_client_id);
+
+    let topic_name = matches
+        .value_of("TOPIC")
+        .map(|x| x.to_owned())
+        .unwrap_or_else(|| String::from("hello/world"));
+
+    // Device access_token
     let user_name = matches.value_of("USER_NAME").map(|x| x.to_owned()).unwrap();
 
     info!("Connecting to {:?} ... ", host);
     info!("Client identifier {:?}", client_id);
+
+    // RSMB address, using IPv6, default is localhost
     let ipv6_addr = IpAddr::V6(Ipv6Addr::LOCALHOST);
+
+    // RSMB MQTT complete address, host + port
     let socket_addr = SocketAddr::new(ipv6_addr, 1888);
 
     //Opens a TCP connection to RSMB.
@@ -87,6 +107,7 @@ async fn main() {
     conn.encode(&mut buf).unwrap();
     rsmb_stream.write_all(&buf[..]).unwrap();
 
+    // Check if the connection is accepted
     let connack = ConnackPacket::decode(&mut rsmb_stream).unwrap();
     trace!("CONNACK {:?}", connack);
 
@@ -119,7 +140,10 @@ async fn main() {
 
     let mut channel_filters: Vec<(TopicFilter, QualityOfService)> = Vec::new();
     channel_filters.push((
-        TopicFilter::new("hello/world").unwrap(),
+        match TopicFilter::new(&topic_name) {
+            Ok(a) => a,
+            _ => unreachable!(),
+        },
         QualityOfService::Level0,
     ));
     let sub = SubscribePacket::new(10, channel_filters);
@@ -147,13 +171,14 @@ async fn main() {
         }
     }
 
-    // connection made, start the async work
+    // Connection made, start the async work
     let mut stream = TcpStream::from_std(rsmb_stream).unwrap();
     let (mut mqtt_read, mut mqtt_write) = stream.split();
 
     let ping_time = Duration::new((10 / 2) as u64, 0);
     let mut ping_stream = tokio::time::interval(ping_time);
 
+    // Responde to broker's PING
     let ping_sender = async move {
         while let Some(_) = ping_stream.next().await {
             info!("Sending PINGREQ to broker");
@@ -165,6 +190,8 @@ async fn main() {
             mqtt_write.write_all(&buf).await.unwrap();
         }
     };
+
+    // Decode received packets
     let receiver = async move {
         while let Ok(packet) = VariablePacket::parse(&mut mqtt_read).await {
             trace!("PACKET {:?}", packet);
@@ -174,22 +201,17 @@ async fn main() {
                     info!("Receiving PINGRESP from broker ..");
                 }
                 VariablePacket::PublishPacket(publ) => {
-                    /*
-                    let msg = match str::from_utf8(&publ.payload_ref()[..]) {
-                        Ok(msg) => msg,
-                        Err(err) => {
-                            error!("Failed to decode publish message {:?}", err);
-                            continue;
-                        }
-                    };
-                    */
                     let msg = publ.payload();
+                    let temperature: i16 = (msg[0]) as i16 - 50;
+                    let values = utils::Values::new(temperature, msg[1], msg[2], msg[3], msg[4]);
                     info!("RECV on Topic : {:?}", msg);
-                    //let telemtry_topic = TopicName::new("v1/devices/me/telemetry").unwrap();
-                    //let value = format!("{{\"temperature\": \"{}\"}}", msg);
-                    //utils::publish(&mut thingsboard_stream, value, telemtry_topic.clone());
+                    let telemtry_topic = TopicName::new("v1/devices/me/telemetry").unwrap();
+                    let value = utils::generate_telemtry_packet(values);
+                    utils::publish(&mut thingsboard_stream, value, telemtry_topic.clone());
                 }
-                _ => {}
+                _ => {
+                    info!("Receiving UNHANDLED PACKET from broker ..");
+                }
             }
         }
     };

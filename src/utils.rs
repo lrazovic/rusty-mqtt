@@ -10,27 +10,27 @@ use uuid::Uuid;
 
 #[derive(Serialize)]
 pub struct Values {
-    temperature: f32,
-    humidity: i16,
-    rain_height: i16,
-    wind_direction: i16,
-    wind_intensity: i16,
+    temperature: i16,
+    humidity: u8,
+    rain_height: u8,
+    wind_direction: u8,
+    wind_intensity: u8,
 }
 
 impl Values {
     pub fn new(
-        temperature: f32,
-        humidity: i16,
-        rain_height: i16,
-        wind_direction: i16,
-        wind_intensity: i16,
+        temperature: i16,
+        humidity: u8,
+        wind_direction: u8,
+        wind_intensity: u8,
+        rain_height: u8,
     ) -> Self {
         Self {
             temperature,
             humidity,
-            rain_height,
             wind_direction,
             wind_intensity,
+            rain_height,
         }
     }
 }
@@ -53,13 +53,13 @@ pub fn generate_client_id() -> String {
 }
 // Random values generation
 
-pub fn generate_telemtry_packet(values: Values) -> Sensor {
+pub fn generate_telemtry_packet(values: Values) -> String {
     let start = SystemTime::now();
     let since_the_epoch = start
         .duration_since(UNIX_EPOCH)
         .expect("Time went backwards");
     let in_ms = since_the_epoch.as_millis();
-    Sensor::new(in_ms, values)
+    serde_json::to_string(&Sensor::new(in_ms, values)).unwrap()
 }
 
 pub fn publish(stream: &mut TcpStream, msg: String, topic: TopicName) {
