@@ -43,26 +43,12 @@ static char stack[THREAD_STACKSIZE_DEFAULT];
 static msg_t queue[8];
 
 static emcute_sub_t subscriptions[NUMOFSUBS];
-static char topics[NUMOFSUBS][TOPIC_MAXLEN];
 
 static void *emcute_thread(void *arg)
 {
     (void)arg;
     emcute_run(EMCUTE_PORT, EMCUTE_ID);
     return NULL; /* should never be reached */
-}
-
-static void on_pub(const emcute_topic_t *topic, void *data, size_t len)
-{
-    char *in = (char *)data;
-
-    printf("### got publication for topic '%s' [%i] ###\n",
-           topic->name, (int)topic->id);
-    for (size_t i = 0; i < len; i++)
-    {
-        printf("%c", in[i]);
-    }
-    puts("");
 }
 
 static unsigned get_qos(const char *str)
@@ -183,19 +169,19 @@ static int cmd_pub(int argc, char **argv)
     return 0;
 }
 
-static int f_pub(int argc, char **argv)
+static int cmd_fpub(int argc, char **argv)
 {
     emcute_topic_t t;
     unsigned flags = EMCUTE_QOS_0;
 
-    if (argc < 2)
+    if (argc < 3)
     {
-        printf("usage: %s <topic name> [QoS level]\n", argv[0]);
+        printf("usage: %s <topic name> <device id> [QoS level]\n", argv[0]);
         return 1;
     }
 
     /* parse QoS level */
-    if (argc >= 3)
+    if (argc >= 4)
     {
         flags |= get_qos(argv[3]);
     }
@@ -210,12 +196,13 @@ static int f_pub(int argc, char **argv)
 
     while (1)
     {
+        int device_id = atoi(argv[2]);
         int temperature = random_uint32_range(0, 100);
         int h = random_uint32_range(0, 100);
         int wd = random_uint32_range(0, 360);
         int wi = random_uint32_range(0, 100);
         int rh = random_uint32_range(0, 50);
-        char values[5] = {temperature, h, wd, wi, rh};
+        char values[6] = {device_id, temperature, h, wd, wi, rh};
         /* step 2: publish data */
         if (emcute_pub(&t, values, sizeof(values), flags) != EMCUTE_OK)
         {
@@ -232,112 +219,11 @@ static int f_pub(int argc, char **argv)
     return 0;
 }
 
-static int cmd_sub(int argc, char **argv)
-{
-    unsigned flags = EMCUTE_QOS_0;
-
-    if (argc < 2)
-    {
-        printf("usage: %s <topic name> [QoS level]\n", argv[0]);
-        return 1;
-    }
-
-    if (strlen(argv[1]) > TOPIC_MAXLEN)
-    {
-        puts("error: topic name exceeds maximum possible size");
-        return 1;
-    }
-    if (argc >= 3)
-    {
-        flags |= get_qos(argv[2]);
-    }
-
-    /* find empty subscription slot */
-    unsigned i = 0;
-    for (; (i < NUMOFSUBS) && (subscriptions[i].topic.id != 0); i++)
-    {
-    }
-    if (i == NUMOFSUBS)
-    {
-        puts("error: no memory to store new subscriptions");
-        return 1;
-    }
-
-    subscriptions[i].cb = on_pub;
-    strcpy(topics[i], argv[1]);
-    subscriptions[i].topic.name = topics[i];
-    if (emcute_sub(&subscriptions[i], flags) != EMCUTE_OK)
-    {
-        printf("error: unable to subscribe to %s\n", argv[1]);
-        return 1;
-    }
-
-    printf("Now subscribed to %s\n", argv[1]);
-    return 0;
-}
-
-static int cmd_unsub(int argc, char **argv)
-{
-    if (argc < 2)
-    {
-        printf("usage %s <topic name>\n", argv[0]);
-        return 1;
-    }
-
-    /* find subscriptions entry */
-    for (unsigned i = 0; i < NUMOFSUBS; i++)
-    {
-        if (subscriptions[i].topic.name &&
-            (strcmp(subscriptions[i].topic.name, argv[1]) == 0))
-        {
-            if (emcute_unsub(&subscriptions[i]) == EMCUTE_OK)
-            {
-                memset(&subscriptions[i], 0, sizeof(emcute_sub_t));
-                printf("Unsubscribed from '%s'\n", argv[1]);
-            }
-            else
-            {
-                printf("Unsubscription form '%s' failed\n", argv[1]);
-            }
-            return 0;
-        }
-    }
-
-    printf("error: no subscription for topic '%s' found\n", argv[1]);
-    return 1;
-}
-
-static int cmd_will(int argc, char **argv)
-{
-    if (argc < 3)
-    {
-        printf("usage %s <will topic name> <will message content>\n", argv[0]);
-        return 1;
-    }
-
-    if (emcute_willupd_topic(argv[1], 0) != EMCUTE_OK)
-    {
-        puts("error: unable to update the last will topic");
-        return 1;
-    }
-    if (emcute_willupd_msg(argv[2], strlen(argv[2])) != EMCUTE_OK)
-    {
-        puts("error: unable to update the last will message");
-        return 1;
-    }
-
-    puts("Successfully updated last will topic and message");
-    return 0;
-}
-
 static const shell_command_t shell_commands[] = {
     {"con", "connect to MQTT broker", cmd_con},
     {"discon", "disconnect from the current broker", cmd_discon},
     {"pub", "publish something", cmd_pub},
-    {"fpub", "publish random data", f_pub},
-    {"sub", "subscribe topic", cmd_sub},
-    {"unsub", "unsubscribe from topic", cmd_unsub},
-    {"will", "register a last will", cmd_will},
+    {"fpub", "publish random data", cmd_fpub},
     {NULL, NULL, NULL}};
 
 int main(void)
