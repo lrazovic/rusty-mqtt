@@ -9,6 +9,17 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
 #[derive(Serialize)]
+pub struct Device {
+    device: String,
+}
+
+impl Device {
+    pub fn new(device: String) -> Self {
+        Self { device }
+    }
+}
+
+#[derive(Serialize)]
 pub struct Values {
     temperature: i16,
     humidity: u8,
@@ -53,13 +64,13 @@ pub fn generate_client_id() -> String {
 }
 // Random values generation
 
-pub fn generate_telemtry_packet(values: Values) -> String {
+pub fn generate_telemtry_packet(values: Values) -> Sensor {
     let start = SystemTime::now();
     let since_the_epoch = start
         .duration_since(UNIX_EPOCH)
         .expect("Time went backwards");
     let in_ms = since_the_epoch.as_millis();
-    serde_json::to_string(&Sensor::new(in_ms, values)).unwrap()
+    Sensor::new(in_ms, values)
 }
 
 pub fn publish(stream: &mut TcpStream, msg: String, topic: TopicName) {

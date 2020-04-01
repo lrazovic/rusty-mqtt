@@ -9,7 +9,7 @@ use std::env;
 use std::io::Write;
 use std::net;
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
-use std::time::Duration;
+use std::{collections::HashMap, time::Duration};
 
 use futures::join;
 use futures::prelude::*;
@@ -37,7 +37,7 @@ async fn main() {
                 .default_value("0.0.0.0")
                 .takes_value(true)
                 .required(true)
-                .help("MQTT server address"),
+                .help("ThingsBoard MQTT server address"),
         )
         .arg(
             Arg::with_name("USER_NAME")
@@ -45,7 +45,15 @@ async fn main() {
                 .long("username")
                 .required(true)
                 .takes_value(true)
-                .help("Device ACCESS_TOKEN"),
+                .help("ThingsBoard device ACCESS_TOKEN"),
+        )
+        .arg(
+            Arg::with_name("TPORT")
+                .short("p")
+                .long("port")
+                .default_value("1883")
+                .takes_value(true)
+                .help("ThingsBoard MQTT Server port"),
         )
         .arg(
             Arg::with_name("TOPIC")
@@ -53,22 +61,29 @@ async fn main() {
                 .long("topic")
                 .required(true)
                 .takes_value(true)
-                .help("Topic to subscribe"),
+                .help("RSMB topic to subscribe"),
         )
         .arg(
-            Arg::with_name("PORT")
-                .short("p")
-                .long("port")
-                .default_value("1883")
+            Arg::with_name("RPORT")
+                .short("k")
+                .long("rsmb-port")
+                .required(true)
                 .takes_value(true)
-                .help("Server's port"),
+                .help("RSMB MQTT server port"),
+        )
+        .arg(
+            Arg::with_name("RSMB")
+                .short("r")
+                .long("rsmb-address")
+                .takes_value(true)
+                .help("RSMB MQTT server address"),
         )
         .get_matches();
     // ThingsBoard server address, default is localhost.
     let server_addr = matches.value_of("SERVER").unwrap();
 
     // ThingsBoard port address, default is 1883
-    let server_port: u16 = matches.value_of("PORT").unwrap().parse().unwrap();
+    let server_port: u16 = matches.value_of("TPORT").unwrap().parse().unwrap();
     let host = format!("{}:{}", server_addr, server_port);
 
     let client_id = matches
@@ -81,6 +96,13 @@ async fn main() {
         .map(|x| x.to_owned())
         .unwrap_or_else(|| String::from("hello/world"));
 
+    let rsmb_address = matches.value_of("RSMB");
+    let rsmb_port: u16 = matches
+        .value_of("RPORT")
+        .unwrap()
+        .parse()
+        .expect("Port is not a number");
+
     // Device access_token
     let user_name = matches.value_of("USER_NAME").map(|x| x.to_owned()).unwrap();
 
@@ -88,16 +110,23 @@ async fn main() {
     info!("Client identifier {:?}", client_id);
 
     // RSMB address, using IPv6, default is localhost
-    let ipv6_addr = IpAddr::V6(Ipv6Addr::LOCALHOST);
+    let ipv6_addr = match rsmb_address {
+        None => IpAddr::V6(Ipv6Addr::LOCALHOST),
+        Some(x) => {
+            let ip_addr: Ipv6Addr = x.parse().expect("Invalid Address");
+            IpAddr::V6(ip_addr)
+        }
+    };
 
     // RSMB MQTT complete address, host + port
-    let socket_addr = SocketAddr::new(ipv6_addr, 1888);
+    let socket_addr = SocketAddr::new(ipv6_addr, rsmb_port);
 
     //Opens a TCP connection to RSMB.
-    let mut rsmb_stream = net::TcpStream::connect(socket_addr).unwrap();
+    let mut rsmb_stream = net::TcpStream::connect(socket_addr).expect("Can't connect to RSMB");
 
     //Opens a TCP connection to ThingsBoard.
-    let mut thingsboard_stream = net::TcpStream::connect(&host).unwrap();
+    let mut thingsboard_stream =
+        net::TcpStream::connect(&host).expect("Can't connect to ThingsBoard");
 
     // Create and Send an initial MQTT CONNECT packet to RSMB.
     let mut conn = ConnectPacket::new("MQTT", client_id.clone());
@@ -118,7 +147,10 @@ async fn main() {
         );
     }
 
-    info!("Successfully connected to RSMB @ [{}]:{}", ipv6_addr, 1888);
+    info!(
+        "Successfully connected to RSMB @ [{}]:{}",
+        ipv6_addr, rsmb_port
+    );
 
     // Create and Send an initial MQTT CONNECT packet to Thingsboard.
     let mut conn = ConnectPacket::new("MQTT", client_id);
@@ -175,13 +207,13 @@ async fn main() {
     let mut stream = TcpStream::from_std(rsmb_stream).unwrap();
     let (mut mqtt_read, mut mqtt_write) = stream.split();
 
-    let ping_time = Duration::new((10 / 2) as u64, 0);
+    let ping_time = Duration::new((30 / 2) as u64, 0);
     let mut ping_stream = tokio::time::interval(ping_time);
 
     // Responde to broker's PING
     let ping_sender = async move {
         while let Some(_) = ping_stream.next().await {
-            info!("Sending PINGREQ to broker");
+            info!("Sending PINGREQ to RSMB");
 
             let pingreq_packet = PingreqPacket::new();
 
@@ -192,22 +224,44 @@ async fn main() {
     };
 
     // Decode received packets
+    let connection_topic = TopicName::new("v1/gateway/connect").unwrap();
+    let mut telemetry = HashMap::new();
+    let telemtry_topic = TopicName::new("v1/gateway/telemetry").unwrap();
+    let mut connected_device = vec![];
     let receiver = async move {
         while let Ok(packet) = VariablePacket::parse(&mut mqtt_read).await {
             trace!("PACKET {:?}", packet);
 
             match packet {
                 VariablePacket::PingrespPacket(..) => {
-                    info!("Receiving PINGRESP from broker ..");
+                    info!("Receiving PINGRESP from RSMB ..");
                 }
                 VariablePacket::PublishPacket(publ) => {
+                    //Connect Gateway and Device
                     let msg = publ.payload();
-                    let temperature: i16 = (msg[0]) as i16 - 50;
-                    let values = utils::Values::new(temperature, msg[1], msg[2], msg[3], msg[4]);
+                    let device_name = format!("station_{}", msg[0]);
+
+                    if !connected_device.contains(&device_name) {
+                        let device = utils::Device::new(device_name.clone());
+                        let message = serde_json::to_string(&device).unwrap();
+                        utils::publish(&mut thingsboard_stream, message, connection_topic.clone());
+                        connected_device.push(device_name.clone());
+                        info!("Gateway and Device {} connected!", msg[0]);
+                    }
+                    //
+                    let temperature: i16 = (msg[1]) as i16 - 50;
+                    let values = utils::Values::new(temperature, msg[2], msg[3], msg[4], msg[5]);
                     info!("RECV on Topic : {:?}", msg);
-                    let telemtry_topic = TopicName::new("v1/devices/me/telemetry").unwrap();
-                    let value = utils::generate_telemtry_packet(values);
-                    utils::publish(&mut thingsboard_stream, value, telemtry_topic.clone());
+                    let mut vector_values = Vec::new();
+                    let sensor_telemetry = utils::generate_telemtry_packet(values);
+                    vector_values.push(sensor_telemetry);
+                    telemetry.insert(device_name.clone(), vector_values);
+                    let serialized_telemetry = serde_json::to_string(&telemetry).unwrap();
+                    utils::publish(
+                        &mut thingsboard_stream,
+                        serialized_telemetry,
+                        telemtry_topic.clone(),
+                    );
                 }
                 _ => {
                     info!("Receiving UNHANDLED PACKET from broker ..");
