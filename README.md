@@ -47,7 +47,7 @@ Assignment 2: [How to setup an Async MQTT transparent bridge in Rust](https://m
 
 Assignment 1: [https://www.youtube.com/watch?v=6th-NgDjC1w&feature=youtu.be](https://www.youtube.com/watch?v=6th-NgDjC1w&feature=youtu.be)
 
-Assignment 2:
+Assignment 2: [https://youtu.be/JiG8LkaZDtQ](https://youtu.be/JiG8LkaZDtQ)
 
 ## The "Subscriber"
 
