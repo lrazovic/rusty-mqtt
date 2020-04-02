@@ -29,6 +29,9 @@
 #include "msg.h"
 #include "net/emcute.h"
 #include "net/ipv6/addr.h"
+#include "lpsxxx.h"
+#include "lpsxxx_params.h"
+#include "lpsxxx_internal.h"
 
 #ifndef EMCUTE_ID
 #define EMCUTE_ID ("gertrud")
@@ -219,11 +222,111 @@ static int cmd_fpub(int argc, char **argv)
     return 0;
 }
 
+static int cmd_temp_pub(int argc, char **argv)
+{
+    emcute_topic_t t;
+    lpsxxx_t dev;
+    unsigned flags = EMCUTE_QOS_0;
+
+    if (argc < 3)
+    {
+        printf("usage: %s <topic name> <device id> [QoS level]\n", argv[0]);
+        return 1;
+    }
+
+    /* parse QoS level */
+    if (argc >= 4)
+    {
+        flags |= get_qos(argv[3]);
+    }
+
+    /* step 1: get topic id */
+    t.name = argv[1];
+    if (emcute_reg(&t) != EMCUTE_OK)
+    {
+        puts("error: unable to obtain topic ID");
+        return 1;
+    }
+    if (lpsxxx_init(&dev, &lpsxxx_params[0]) != LPSXXX_OK)
+    {
+        puts("Initialization failed");
+        return 1;
+    }
+
+    int16_t temp;
+    while (1)
+    {
+        lpsxxx_enable(&dev);
+        xtimer_sleep(1); /* wait a bit for the measurements to complete */
+        lpsxxx_read_temp(&dev, &temp);
+        lpsxxx_disable(&dev);
+        int temp_abs = temp / 100;
+        int device_id = atoi(argv[2]);
+        int temperature = temp_abs;
+        int h = random_uint32_range(0, 100);
+        int wd = random_uint32_range(0, 360);
+        int wi = random_uint32_range(0, 100);
+        int rh = random_uint32_range(0, 50);
+        char values[6] = {device_id, temperature, h, wd, wi, rh};
+        /* step 2: publish data */
+        if (emcute_pub(&t, values, sizeof(values), flags) != EMCUTE_OK)
+        {
+            printf("error: unable to publish data to topic '%s [%i]'\n",
+                   t.name, (int)t.id);
+            return 1;
+        }
+
+        printf("Published %i bytes to topic '%s [%i]'\n",
+               sizeof(values), t.name, t.id);
+        xtimer_sleep(5);
+    }
+
+    return 0;
+}
+
+static int cmd_read(int argc, char **argv)
+{
+    lpsxxx_t dev;
+    (void)argc;
+    (void)argv;
+
+    printf("Test application for %s pressure sensor\n\n", LPSXXX_SAUL_NAME);
+    printf("Initializing %s sensor\n", LPSXXX_SAUL_NAME);
+
+    if (lpsxxx_init(&dev, &lpsxxx_params[0]) != LPSXXX_OK)
+    {
+        puts("Initialization failed");
+        return 1;
+    }
+
+    uint16_t pres;
+    int16_t temp;
+    while (1)
+    {
+        lpsxxx_enable(&dev);
+        xtimer_sleep(1); /* wait a bit for the measurements to complete */
+
+        lpsxxx_read_temp(&dev, &temp);
+        lpsxxx_read_pres(&dev, &pres);
+        lpsxxx_disable(&dev);
+
+        int temp_abs = temp / 100;
+        temp -= temp_abs * 100;
+
+        printf("Pressure value: %ihPa - Temperature: %2i.%02i°C\n",
+               pres, temp_abs, temp);
+    }
+
+    return 0;
+}
+
 static const shell_command_t shell_commands[] = {
     {"con", "connect to MQTT broker", cmd_con},
     {"discon", "disconnect from the current broker", cmd_discon},
     {"pub", "publish something", cmd_pub},
     {"fpub", "publish random data", cmd_fpub},
+    {"read", "read device sensors", cmd_read},
+    {"tpub", "publish random data + real temperature", cmd_temp_pub},
     {NULL, NULL, NULL}};
 
 int main(void)
