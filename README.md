@@ -41,7 +41,7 @@ $ cargo run -- -k 1888 -t "sensors/values" -u "8gPybcTugiggd2FVtD0i"
 
 Assignment 1: [The MQTT protocol using ThingsBoard, Rust and React](https://medium.com/@LRazovic/mqtt-protocol-using-thingsboard-rust-and-react-9f0434bd206e)
 
-Assignment 2: [How to setup an Async MQTT transparent bridge in Rust]()
+Assignment 2: [How to setup an Async MQTT transparent bridge in Rust](https://medium.com/@LRazovic/how-to-setup-an-async-mqtt-transparent-bridge-in-rust-4614ad705138)
 
 ## YouTube Video
 
