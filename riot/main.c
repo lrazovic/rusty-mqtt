@@ -29,9 +29,9 @@
 #include "msg.h"
 #include "net/emcute.h"
 #include "net/ipv6/addr.h"
-#include "lpsxxx.h"
-#include "lpsxxx_params.h"
-#include "lpsxxx_internal.h"
+// #include "lpsxxx.h"
+// #include "lpsxxx_params.h"
+// #include "lpsxxx_internal.h"
 
 #ifndef EMCUTE_ID
 #define EMCUTE_ID ("gertrud")
@@ -222,6 +222,7 @@ static int cmd_fpub(int argc, char **argv)
     return 0;
 }
 
+/*
 static int cmd_temp_pub(int argc, char **argv)
 {
     emcute_topic_t t;
@@ -234,13 +235,13 @@ static int cmd_temp_pub(int argc, char **argv)
         return 1;
     }
 
-    /* parse QoS level */
+    // parse QoS level 
     if (argc >= 4)
     {
         flags |= get_qos(argv[3]);
     }
 
-    /* step 1: get topic id */
+    // step 1: get topic id
     t.name = argv[1];
     if (emcute_reg(&t) != EMCUTE_OK)
     {
@@ -257,7 +258,7 @@ static int cmd_temp_pub(int argc, char **argv)
     while (1)
     {
         lpsxxx_enable(&dev);
-        xtimer_sleep(1); /* wait a bit for the measurements to complete */
+        xtimer_sleep(1); // wait a bit for the measurements to complete
         lpsxxx_read_temp(&dev, &temp);
         lpsxxx_disable(&dev);
         int temp_abs = temp / 100;
@@ -268,7 +269,7 @@ static int cmd_temp_pub(int argc, char **argv)
         int wi = random_uint32_range(0, 100);
         int rh = random_uint32_range(0, 50);
         char values[6] = {device_id, temperature, h, wd, wi, rh};
-        /* step 2: publish data */
+        // step 2: publish data
         if (emcute_pub(&t, values, sizeof(values), flags) != EMCUTE_OK)
         {
             printf("error: unable to publish data to topic '%s [%i]'\n",
@@ -304,7 +305,7 @@ static int cmd_read(int argc, char **argv)
     while (1)
     {
         lpsxxx_enable(&dev);
-        xtimer_sleep(1); /* wait a bit for the measurements to complete */
+        xtimer_sleep(1);
 
         lpsxxx_read_temp(&dev, &temp);
         lpsxxx_read_pres(&dev, &pres);
@@ -319,14 +320,15 @@ static int cmd_read(int argc, char **argv)
 
     return 0;
 }
+*/
 
 static const shell_command_t shell_commands[] = {
     {"con", "connect to MQTT broker", cmd_con},
     {"discon", "disconnect from the current broker", cmd_discon},
     {"pub", "publish something", cmd_pub},
     {"fpub", "publish random data", cmd_fpub},
-    {"read", "read device sensors", cmd_read},
-    {"tpub", "publish random data + real temperature", cmd_temp_pub},
+    //{"read", "read device sensors", cmd_read},
+    //{"tpub", "publish random data + real temperature", cmd_temp_pub},
     {NULL, NULL, NULL}};
 
 int main(void)
