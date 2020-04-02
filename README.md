@@ -37,11 +37,13 @@ $ cargo run -- -k 1888 -t "sensors/values" -u "8gPybcTugiggd2FVtD0i"
 ## Blog Post
 
 Assignment 1: [The MQTT protocol using ThingsBoard, Rust and React](https://medium.com/@LRazovic/mqtt-protocol-using-thingsboard-rust-and-react-9f0434bd206e)
-Assignment 2: On [Medium]
+Assignment 2: [How to setup an Async MQTT transparent bridge in Rust]()
 
 ## YouTube Video
 
-[https://www.youtube.com/watch?v=6th-NgDjC1w&feature=youtu.be](https://www.youtube.com/watch?v=6th-NgDjC1w&feature=youtu.be)
+Assignment 1: [https://www.youtube.com/watch?v=6th-NgDjC1w&feature=youtu.be](https://www.youtube.com/watch?v=6th-NgDjC1w&feature=youtu.be)
+
+Assignment 2:
 
 ## The "Subscriber"
 
