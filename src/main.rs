@@ -45,7 +45,7 @@ async fn main() {
                 .long("username")
                 .required(true)
                 .takes_value(true)
-                .help("ThingsBoard device ACCESS_TOKEN"),
+                .help("ThingsBoard gateway device ACCESS_TOKEN"),
         )
         .arg(
             Arg::with_name("TPORT")
