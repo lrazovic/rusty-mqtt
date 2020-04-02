@@ -2,6 +2,10 @@
 
 An MQTT transparent bridge in Rust built for the Internet of Things 19/20 course during the Engineering in Computer Science Master's Degree. 
 
+## LinkedIn Profile
+
+[Leonardo Razovic](https://www.linkedin.com/in/leonardo-razovic-4b20b1121/)
+
 ## Prerequisites
 
 1. Rust, you can install it using [rustup](https://rustup.rs/)
