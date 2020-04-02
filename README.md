@@ -24,8 +24,7 @@ OPTIONS:
     -s, --server <SERVER>         ThingsBoard MQTT server address [default: 0.0.0.0]
     -t, --topic <TOPIC>           RSMB topic to subscribe
     -p, --port <TPORT>            ThingsBoard MQTT Server port [default: 1883]
-    -u, --username <USER_NAME>    ThingsBoard device ACCESS_TOKEN
-
+    -u, --username <USER_NAME>    ThingsBoard gateway device ACCESS_TOKEN
 ```
 
 ### Example
@@ -37,6 +36,7 @@ $ cargo run -- -k 1888 -t "sensors/values" -u "8gPybcTugiggd2FVtD0i"
 ## Blog Post
 
 Assignment 1: [The MQTT protocol using ThingsBoard, Rust and React](https://medium.com/@LRazovic/mqtt-protocol-using-thingsboard-rust-and-react-9f0434bd206e)
+
 Assignment 2: [How to setup an Async MQTT transparent bridge in Rust]()
 
 ## YouTube Video
