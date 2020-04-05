@@ -46,19 +46,14 @@ listener 1886 INADDR_ANY
 ./broker_mqtts config.conf
 ```
 
-You can refer to
-https://rawgit.com/MichalFoksa/rsmb/master/rsmb/doc/gettingstarted.htm for more
-configuration options.
-
-
 ### Setting up RIOT `native`
 When running this example under native, we must configure some global addresses,
 as the RSMB doesn't seems to be able to handle link-local addresses. So for a
 single RIOT native instance, we can do the following:
 
-1. Setup `tap` and `tapbr` devices using RIOT's `tapsetup` script:
+1. Setup `tap1`, `tap2` and `tapbr` devices using RIOT's `tapsetup` script:
 ```
-sudo ./RIOTDIR/dist/tools/tapsetup/tapsetup
+sudo ./RIOTDIR/dist/tools/tapsetup/tapsetup -c 2
 ```
 
 2. Assign a site-global prefix to the `tapbr0` interface (the name could be
@@ -67,8 +62,10 @@ sudo ./RIOTDIR/dist/tools/tapsetup/tapsetup
 sudo ip a a fec0:affe::1/64 dev tapbr0
 ```
 
-3. Assign a site-global address with the same prefix within the RIOT `native`
-   instance (open first with `BOARD=native make term`):
+3. Compile and run the code using `make all term PORT=tap0 BOARD=native` or `make all term PORT=tap0 BOARD=native BUILD_IN_DOCKER=1` if you are using Docker to compile.
+
+4. Inside RIOT shell, assign a site-global address with the same prefix within the RIOT `native`
+   instance:
 ```
 ifconfig 5 add fec0:affe::99
 ```
@@ -84,24 +81,13 @@ below:
 con fec0:affe::1 1885
 ```
 
-- To subscribe to a topic, run `sub` with the topic name as parameter, e.g.
-```
-sub hello/world
-```
-
 - For publishing, use the `pub` command:
 ```
 pub hello/world "One more beer, please."
 ```
+- For publishing random data, use the `fpub` command:
+```
+fpub sensors/values 1
+```
 
 That's it, happy publishing!
-
-
-## FAQ
-
-### I can't connect multiple RIOT nodes to a broker, what can I do?
-Each node that connects to the broker must have a unique node ID string set. Per
-default, this example sets this statically ID to `gertrud`. If you want to
-connect more than one node to the broker, you need to set a custom ID for each
-node during compile time. Simply use the `EMCUTE_ID` environment variable for
-this, e.g. build with `EMCUTE_ID=horst make all`.

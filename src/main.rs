@@ -45,7 +45,7 @@ async fn main() {
                 .long("username")
                 .required(true)
                 .takes_value(true)
-                .help("ThingsBoard device ACCESS_TOKEN"),
+                .help("ThingsBoard gateway device ACCESS_TOKEN"),
         )
         .arg(
             Arg::with_name("TPORT")
@@ -103,7 +103,7 @@ async fn main() {
         .parse()
         .expect("Port is not a number");
 
-    // Device access_token
+    // ThingsBoard Gateway Device access_token
     let user_name = matches.value_of("USER_NAME").map(|x| x.to_owned()).unwrap();
 
     info!("Connecting to {:?} ... ", host);
@@ -129,7 +129,7 @@ async fn main() {
         net::TcpStream::connect(&host).expect("Can't connect to ThingsBoard");
 
     // Create and Send an initial MQTT CONNECT packet to RSMB.
-    let mut conn = ConnectPacket::new("MQTT", client_id.clone());
+    let mut conn = ConnectPacket::new("MQTT", &client_id);
     conn.set_clean_session(true);
     conn.set_keep_alive(10);
     let mut buf = Vec::new();
@@ -170,6 +170,7 @@ async fn main() {
     }
     info!("Successfully connected to Thingsboard @ {}", host);
 
+    // Create a TopicFilter to Subscribe
     let mut channel_filters: Vec<(TopicFilter, QualityOfService)> = Vec::new();
     channel_filters.push((
         match TopicFilter::new(&topic_name) {
@@ -178,6 +179,8 @@ async fn main() {
         },
         QualityOfService::Level0,
     ));
+
+    // Create and send an MQTT SUBSCRIBE packet to RSMB
     let sub = SubscribePacket::new(10, channel_filters);
     let mut buf = Vec::new();
     sub.encode(&mut buf).unwrap();
@@ -210,7 +213,7 @@ async fn main() {
     let ping_time = Duration::new((30 / 2) as u64, 0);
     let mut ping_stream = tokio::time::interval(ping_time);
 
-    // Responde to broker's PING
+    // PING RSMB
     let ping_sender = async move {
         while let Some(_) = ping_stream.next().await {
             info!("Sending PINGREQ to RSMB");
@@ -237,10 +240,10 @@ async fn main() {
                     info!("Receiving PINGRESP from RSMB ..");
                 }
                 VariablePacket::PublishPacket(publ) => {
-                    //Connect Gateway and Device
                     let msg = publ.payload();
                     let device_name = format!("station_{}", msg[0]);
 
+                    // Connect Gateway and Device, only if they are not already connected
                     if !connected_device.contains(&device_name) {
                         let device = utils::Device::new(device_name.clone());
                         let message = serde_json::to_string(&device).unwrap();
@@ -248,7 +251,7 @@ async fn main() {
                         connected_device.push(device_name.clone());
                         info!("Gateway and Device {} connected!", msg[0]);
                     }
-                    //
+                    // Forward the received message to ThingsBoard
                     let temperature: i16 = (msg[1]) as i16 - 50;
                     let values = utils::Values::new(temperature, msg[2], msg[3], msg[4], msg[5]);
                     info!("RECV on Topic : {:?}", msg);

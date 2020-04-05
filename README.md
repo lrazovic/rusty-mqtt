@@ -2,6 +2,10 @@
 
 An MQTT transparent bridge in Rust built for the Internet of Things 19/20 course during the Engineering in Computer Science Master's Degree. 
 
+## LinkedIn Profile
+
+[Leonardo Razovic](https://www.linkedin.com/in/leonardo-razovic-4b20b1121/)
+
 ## Prerequisites
 
 1. Rust, you can install it using [rustup](https://rustup.rs/)
@@ -24,8 +28,7 @@ OPTIONS:
     -s, --server <SERVER>         ThingsBoard MQTT server address [default: 0.0.0.0]
     -t, --topic <TOPIC>           RSMB topic to subscribe
     -p, --port <TPORT>            ThingsBoard MQTT Server port [default: 1883]
-    -u, --username <USER_NAME>    ThingsBoard device ACCESS_TOKEN
-
+    -u, --username <USER_NAME>    ThingsBoard gateway device ACCESS_TOKEN
 ```
 
 ### Example
@@ -37,11 +40,14 @@ $ cargo run -- -k 1888 -t "sensors/values" -u "8gPybcTugiggd2FVtD0i"
 ## Blog Post
 
 Assignment 1: [The MQTT protocol using ThingsBoard, Rust and React](https://medium.com/@LRazovic/mqtt-protocol-using-thingsboard-rust-and-react-9f0434bd206e)
-Assignment 2: On [Medium]
+
+Assignment 2: [How to setup an Async MQTT transparent bridge in Rust](https://medium.com/@LRazovic/how-to-setup-an-async-mqtt-transparent-bridge-in-rust-4614ad705138)
 
 ## YouTube Video
 
-[https://www.youtube.com/watch?v=6th-NgDjC1w&feature=youtu.be](https://www.youtube.com/watch?v=6th-NgDjC1w&feature=youtu.be)
+Assignment 1: [https://www.youtube.com/watch?v=6th-NgDjC1w&feature=youtu.be](https://www.youtube.com/watch?v=6th-NgDjC1w&feature=youtu.be)
+
+Assignment 2: [https://youtu.be/JiG8LkaZDtQ](https://youtu.be/JiG8LkaZDtQ)
 
 ## The "Subscriber"
 
