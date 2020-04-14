@@ -8,13 +8,15 @@ use mqtt::{Decodable, Encodable, QualityOfService};
 use std::env;
 use std::io::Write;
 use std::net;
-use std::net::{IpAddr, Ipv6Addr, SocketAddr};
+use std::net::{IpAddr, SocketAddr};
+use std::str;
 use std::{collections::HashMap, time::Duration};
 
 use futures::join;
 use futures::prelude::*;
 use tokio::net::TcpStream;
 use tokio::prelude::*;
+mod credentials;
 mod utils;
 
 #[tokio::main]
@@ -61,22 +63,23 @@ async fn main() {
                 .long("topic")
                 .required(true)
                 .takes_value(true)
-                .help("RSMB topic to subscribe"),
+                .help("TTN topic to subscribe"),
         )
         .arg(
             Arg::with_name("RPORT")
                 .short("k")
-                .long("rsmb-port")
+                .long("TTN-port")
                 .required(true)
                 .takes_value(true)
-                .help("RSMB MQTT server port"),
+                .help("TTN MQTT server port"),
         )
         .arg(
-            Arg::with_name("RSMB")
+            Arg::with_name("TTN")
                 .short("r")
-                .long("rsmb-address")
+                .long("TTN-address")
                 .takes_value(true)
-                .help("RSMB MQTT server address"),
+                .default_value("eu.thethings.network")
+                .help("TTN MQTT server address"),
         )
         .get_matches();
     // ThingsBoard server address, default is localhost.
@@ -85,6 +88,9 @@ async fn main() {
     // ThingsBoard port address, default is 1883
     let server_port: u16 = matches.value_of("TPORT").unwrap().parse().unwrap();
     let host = format!("{}:{}", server_addr, server_port);
+
+    // ThingsBoard Gateway Device access_token
+    let user_name = matches.value_of("USER_NAME").map(|x| x.to_owned()).unwrap();
 
     let client_id = matches
         .value_of("CLIENT_ID")
@@ -96,48 +102,47 @@ async fn main() {
         .map(|x| x.to_owned())
         .unwrap_or_else(|| String::from("hello/world"));
 
-    let rsmb_address = matches.value_of("RSMB");
-    let rsmb_port: u16 = matches
+    let _ttn_address = matches.value_of("TTN");
+    let ttn_port: u16 = matches
         .value_of("RPORT")
         .unwrap()
         .parse()
         .expect("Port is not a number");
 
-    // ThingsBoard Gateway Device access_token
-    let user_name = matches.value_of("USER_NAME").map(|x| x.to_owned()).unwrap();
-
-    info!("Connecting to {:?} ... ", host);
     info!("Client identifier {:?}", client_id);
 
-    // RSMB address, using IPv6, default is localhost
-    let ipv6_addr = match rsmb_address {
-        None => IpAddr::V6(Ipv6Addr::LOCALHOST),
-        Some(x) => {
-            let ip_addr: Ipv6Addr = x.parse().expect("Invalid Address");
-            IpAddr::V6(ip_addr)
-        }
+    // TTN MQTT complete address, host + port
+    let ttn_addr = match "52.169.76.255".parse::<IpAddr>() {
+        Ok(a) => a,
+        _ => unreachable!(),
     };
+    info!("Connecting to TTN @ {}:{} ... ", ttn_addr, ttn_port);
+    let socket_addr = SocketAddr::new(ttn_addr, ttn_port);
 
-    // RSMB MQTT complete address, host + port
-    let socket_addr = SocketAddr::new(ipv6_addr, rsmb_port);
-
-    //Opens a TCP connection to RSMB.
-    let mut rsmb_stream = net::TcpStream::connect(socket_addr).expect("Can't connect to RSMB");
-
+    //Opens a TCP connection to TTN.
+    let mut ttn_stream = net::TcpStream::connect(socket_addr).expect("Can't connect to TTN");
+    info!(
+        "Successfully opended a Stream to TTN @ {}:{}",
+        ttn_addr, ttn_port
+    );
     //Opens a TCP connection to ThingsBoard.
+    info!("Connecting to ThingsBoard @ {:?} ... ", host);
     let mut thingsboard_stream =
         net::TcpStream::connect(&host).expect("Can't connect to ThingsBoard");
 
-    // Create and Send an initial MQTT CONNECT packet to RSMB.
+    // Create and Send an initial MQTT CONNECT packet to TTN.
+    let credentials = credentials::get_credentials();
     let mut conn = ConnectPacket::new("MQTT", &client_id);
     conn.set_clean_session(true);
     conn.set_keep_alive(10);
+    conn.set_password(Some(credentials.appaccesskey));
+    conn.set_user_name(Some(credentials.appid));
     let mut buf = Vec::new();
     conn.encode(&mut buf).unwrap();
-    rsmb_stream.write_all(&buf[..]).unwrap();
+    ttn_stream.write_all(&buf[..]).unwrap();
 
     // Check if the connection is accepted
-    let connack = ConnackPacket::decode(&mut rsmb_stream).unwrap();
+    let connack = ConnackPacket::decode(&mut ttn_stream).unwrap();
     trace!("CONNACK {:?}", connack);
 
     if connack.connect_return_code() != ConnectReturnCode::ConnectionAccepted {
@@ -147,10 +152,7 @@ async fn main() {
         );
     }
 
-    info!(
-        "Successfully connected to RSMB @ [{}]:{}",
-        ipv6_addr, rsmb_port
-    );
+    info!("Successfully connected to TTN @ {}:{}", ttn_addr, ttn_port);
 
     // Create and Send an initial MQTT CONNECT packet to Thingsboard.
     let mut conn = ConnectPacket::new("MQTT", client_id);
@@ -180,14 +182,15 @@ async fn main() {
         QualityOfService::Level0,
     ));
 
-    // Create and send an MQTT SUBSCRIBE packet to RSMB
+    // Create and send an MQTT SUBSCRIBE packet to TTN
+    info!("Subscribed to {:?}", &channel_filters[0].0);
     let sub = SubscribePacket::new(10, channel_filters);
     let mut buf = Vec::new();
     sub.encode(&mut buf).unwrap();
-    rsmb_stream.write_all(&buf[..]).unwrap();
+    ttn_stream.write_all(&buf[..]).unwrap();
 
     loop {
-        let packet = match VariablePacket::decode(&mut rsmb_stream) {
+        let packet = match VariablePacket::decode(&mut ttn_stream) {
             Ok(pk) => pk,
             Err(err) => {
                 error!("Error in receiving packet {:?}", err);
@@ -207,16 +210,16 @@ async fn main() {
     }
 
     // Connection made, start the async work
-    let mut stream = TcpStream::from_std(rsmb_stream).unwrap();
+    let mut stream = TcpStream::from_std(ttn_stream).unwrap();
     let (mut mqtt_read, mut mqtt_write) = stream.split();
 
-    let ping_time = Duration::new((30 / 2) as u64, 0);
+    let ping_time = Duration::new((10) as u64, 0);
     let mut ping_stream = tokio::time::interval(ping_time);
 
-    // PING RSMB
+    // PING TTN
     let ping_sender = async move {
         while let Some(_) = ping_stream.next().await {
-            info!("Sending PINGREQ to RSMB");
+            info!("Sending PINGREQ to TTN");
 
             let pingreq_packet = PingreqPacket::new();
 
@@ -237,11 +240,25 @@ async fn main() {
 
             match packet {
                 VariablePacket::PingrespPacket(..) => {
-                    info!("Receiving PINGRESP from RSMB ..");
+                    info!("Receiving PINGRESP from TTN ..");
                 }
                 VariablePacket::PublishPacket(publ) => {
-                    let msg = publ.payload();
-                    let device_name = format!("station_{}", msg[0]);
+                    let payload = publ.payload();
+                    let jsonvalue: serde_json::Value =
+                        serde_json::from_slice(&payload).expect("JSON was not well-formatted");
+                    info!("RECV JSON Value: {}", &jsonvalue);
+
+                    let device_name = format!("station_{}", &jsonvalue["dev_id"].as_str().unwrap());
+                    let payload_fields = &jsonvalue["payload_fields"]["result"];
+                    info!("Values: {}", payload_fields);
+                    let raw_str_values: Vec<&str> = payload_fields
+                        .as_str()
+                        .unwrap()
+                        .split_ascii_whitespace()
+                        .collect();
+
+                    let raw_values: Vec<i16> =
+                        raw_str_values.iter().map(|x| x.parse().unwrap()).collect();
 
                     // Connect Gateway and Device, only if they are not already connected
                     if !connected_device.contains(&device_name) {
@@ -249,12 +266,17 @@ async fn main() {
                         let message = serde_json::to_string(&device).unwrap();
                         utils::publish(&mut thingsboard_stream, message, connection_topic.clone());
                         connected_device.push(device_name.clone());
-                        info!("Gateway and Device {} connected!", msg[0]);
+                        info!("Gateway and Device {} connected!", device_name);
                     }
                     // Forward the received message to ThingsBoard
-                    let temperature: i16 = (msg[1]) as i16 - 50;
-                    let values = utils::Values::new(temperature, msg[2], msg[3], msg[4], msg[5]);
-                    info!("RECV on Topic : {:?}", msg);
+                    let temperature: i16 = raw_values[0] - 50;
+                    let values = utils::Values::new(
+                        temperature,
+                        raw_values[1],
+                        raw_values[2],
+                        raw_values[3],
+                        raw_values[4],
+                    );
                     let mut vector_values = Vec::new();
                     let sensor_telemetry = utils::generate_telemtry_packet(values);
                     vector_values.push(sensor_telemetry);
@@ -266,9 +288,19 @@ async fn main() {
                         telemtry_topic.clone(),
                     );
                 }
-                _ => {
-                    info!("Receiving UNHANDLED PACKET from broker ..");
-                }
+
+                VariablePacket::ConnectPacket(_) => {}
+                VariablePacket::ConnackPacket(_) => {}
+                VariablePacket::PubackPacket(_) => {}
+                VariablePacket::PubrecPacket(_) => {}
+                VariablePacket::PubrelPacket(_) => {}
+                VariablePacket::PubcompPacket(_) => {}
+                VariablePacket::PingreqPacket(_) => {}
+                VariablePacket::SubscribePacket(_) => {}
+                VariablePacket::SubackPacket(_) => {}
+                VariablePacket::UnsubscribePacket(_) => {}
+                VariablePacket::UnsubackPacket(_) => {}
+                VariablePacket::DisconnectPacket(_) => {}
             }
         }
     };

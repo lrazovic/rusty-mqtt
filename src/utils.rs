@@ -22,19 +22,19 @@ impl Device {
 #[derive(Serialize)]
 pub struct Values {
     temperature: i16,
-    humidity: u8,
-    rain_height: u8,
-    wind_direction: u8,
-    wind_intensity: u8,
+    humidity: i16,
+    rain_height: i16,
+    wind_direction: i16,
+    wind_intensity: i16,
 }
 
 impl Values {
     pub fn new(
         temperature: i16,
-        humidity: u8,
-        wind_direction: u8,
-        wind_intensity: u8,
-        rain_height: u8,
+        humidity: i16,
+        wind_direction: i16,
+        wind_intensity: i16,
+        rain_height: i16,
     ) -> Self {
         Self {
             temperature,
