@@ -10,3 +10,4 @@ Cargo.lock
 **/*.rs.bk
 
 bin
+riot/lorawan/credentials.include
