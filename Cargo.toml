@@ -1,6 +1,6 @@
 [package]
 name = "rusty-mqtt"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Leonardo Razovic <leorazzo@gmail.com>"]
 edition = "2018"
 
@@ -14,9 +14,5 @@ env_logger = "0.7.1"
 uuid = { version = "0.8.1", features = ["v4"] }
 clap = "2.33.0"
 mqtt-protocol = { version = "0.8.1", features = ["async"] }
-<<<<<<< HEAD
-tokio = { version = "0.2.16", features = ["full"] }
-=======
-tokio = { version = "0.2.15", features = ["full"] }
->>>>>>> 66cdaf1356e44e4346c2a7a1596fbbfadb1278f6
+tokio = { version = "0.2.18", features = ["full"] }
 futures = "0.3.4"
