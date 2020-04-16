@@ -10,7 +10,8 @@ A bridge between the MQTT broker of TTN and ThingsBoard in Rust built for the In
 
 1. Rust, you can install it using [rustup](https://rustup.rs/)
 2. [ThingsBoard](https://thingsboard.io/docs/user-guide/install/installation-options/)
-3. [RSMB](https://github.com/eclipse/mosquitto.rsmb) (or any other MQTT-SN/MQTT broker with IPv6 support)
+3. A [B-L072Z-LRWAN1 LoRa kit](https://www.st.com/en/evaluation-tools/b-l072z-lrwan1.html) or an [IoT-LAB](https://www.iot-lab.info/) Account
+4. An account on [The Things Network](https://www.thethingsnetwork.org/)
 
 ## Usage
 
