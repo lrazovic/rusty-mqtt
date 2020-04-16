@@ -52,7 +52,7 @@ Assignment 1: [https://www.youtube.com/watch?v=6th-NgDjC1w&feature=youtu.be](htt
 
 Assignment 2: [https://youtu.be/JiG8LkaZDtQ](https://youtu.be/JiG8LkaZDtQ)
 
-Assignment 3: [](TODO)
+Assignment 3: [https://www.youtube.com/watch?v=bsJNijxUCw0](https://www.youtube.com/watch?v=bsJNijxUCw0)
 
 ## The "Subscriber"
 
