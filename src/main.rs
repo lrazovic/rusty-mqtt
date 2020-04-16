@@ -8,7 +8,6 @@ use mqtt::{Decodable, Encodable, QualityOfService};
 use std::env;
 use std::io::Write;
 use std::net;
-use std::net::{IpAddr, SocketAddr};
 use std::str;
 use std::{collections::HashMap, time::Duration};
 
@@ -31,7 +30,7 @@ async fn main() {
     // Parse arguments from CLI
     let matches = App::new("rusty-mqtt")
         .author("Leonardo Razovic <lrazovic@gmail.com>")
-        .version("0.2")
+        .version("0.3")
         .arg(
             Arg::with_name("SERVER")
                 .short("s")
@@ -82,6 +81,7 @@ async fn main() {
                 .help("TTN MQTT server address"),
         )
         .get_matches();
+
     // ThingsBoard server address, default is localhost.
     let server_addr = matches.value_of("SERVER").unwrap();
 
@@ -92,6 +92,7 @@ async fn main() {
     // ThingsBoard Gateway Device access_token
     let user_name = matches.value_of("USER_NAME").map(|x| x.to_owned()).unwrap();
 
+    // Device ID
     let client_id = matches
         .value_of("CLIENT_ID")
         .map(|x| x.to_owned())
@@ -102,7 +103,10 @@ async fn main() {
         .map(|x| x.to_owned())
         .unwrap_or_else(|| String::from("hello/world"));
 
-    let _ttn_address = matches.value_of("TTN");
+    // TTN server address, default is eu.thethings.network.
+    let ttn_address = matches.value_of("TTN").map(|x| x.to_owned()).unwrap();
+
+    // TTN port address
     let ttn_port: u16 = matches
         .value_of("RPORT")
         .unwrap()
@@ -111,20 +115,12 @@ async fn main() {
 
     info!("Client identifier {:?}", client_id);
 
-    // TTN MQTT complete address, host + port
-    let ttn_addr = match "52.169.76.255".parse::<IpAddr>() {
-        Ok(a) => a,
-        _ => unreachable!(),
-    };
-    info!("Connecting to TTN @ {}:{} ... ", ttn_addr, ttn_port);
-    let socket_addr = SocketAddr::new(ttn_addr, ttn_port);
+    let url = format!("{}:{}", ttn_address, ttn_port);
+    info!("Connecting to TTN @ {} ... ", url);
 
     //Opens a TCP connection to TTN.
-    let mut ttn_stream = net::TcpStream::connect(socket_addr).expect("Can't connect to TTN");
-    info!(
-        "Successfully opended a Stream to TTN @ {}:{}",
-        ttn_addr, ttn_port
-    );
+    let mut ttn_stream = net::TcpStream::connect(&url).expect("Can't connect to TTN");
+
     //Opens a TCP connection to ThingsBoard.
     info!("Connecting to ThingsBoard @ {:?} ... ", host);
     let mut thingsboard_stream =
@@ -152,9 +148,9 @@ async fn main() {
         );
     }
 
-    info!("Successfully connected to TTN @ {}:{}", ttn_addr, ttn_port);
+    info!("Successfully connected to TTN @ {}", url);
 
-    // Create and Send an initial MQTT CONNECT packet to Thingsboard.
+    // Create and send an initial MQTT CONNECT packet to Thingsboard.
     let mut conn = ConnectPacket::new("MQTT", client_id);
     conn.set_clean_session(true);
     conn.set_user_name(Some(user_name));
@@ -243,20 +239,22 @@ async fn main() {
                     info!("Receiving PINGRESP from TTN ..");
                 }
                 VariablePacket::PublishPacket(publ) => {
+                    // Take the payload, in bytes
                     let payload = publ.payload();
+
+                    // From bytes to JSON
                     let jsonvalue: serde_json::Value =
                         serde_json::from_slice(&payload).expect("JSON was not well-formatted");
-                    info!("RECV JSON Value: {}", &jsonvalue);
 
                     let device_name = format!("station_{}", &jsonvalue["dev_id"].as_str().unwrap());
                     let payload_fields = &jsonvalue["payload_fields"]["result"];
-                    info!("Values: {}", payload_fields);
+
+                    // Get the 5 values from the JSON
                     let raw_str_values: Vec<&str> = payload_fields
                         .as_str()
                         .unwrap()
                         .split_ascii_whitespace()
                         .collect();
-
                     let raw_values: Vec<i16> =
                         raw_str_values.iter().map(|x| x.parse().unwrap()).collect();
 
@@ -269,7 +267,7 @@ async fn main() {
                         info!("Gateway and Device {} connected!", device_name);
                     }
                     // Forward the received message to ThingsBoard
-                    let temperature: i16 = raw_values[0] - 50;
+                    let temperature = raw_values[0] - 50;
                     let values = utils::Values::new(
                         temperature,
                         raw_values[1],
@@ -289,18 +287,7 @@ async fn main() {
                     );
                 }
 
-                VariablePacket::ConnectPacket(_) => {}
-                VariablePacket::ConnackPacket(_) => {}
-                VariablePacket::PubackPacket(_) => {}
-                VariablePacket::PubrecPacket(_) => {}
-                VariablePacket::PubrelPacket(_) => {}
-                VariablePacket::PubcompPacket(_) => {}
-                VariablePacket::PingreqPacket(_) => {}
-                VariablePacket::SubscribePacket(_) => {}
-                VariablePacket::SubackPacket(_) => {}
-                VariablePacket::UnsubscribePacket(_) => {}
-                VariablePacket::UnsubackPacket(_) => {}
-                VariablePacket::DisconnectPacket(_) => {}
+                _ => {}
             }
         }
     };
