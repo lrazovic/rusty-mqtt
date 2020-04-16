@@ -1,6 +1,6 @@
 # rusty-mqtt
 
-An MQTT transparent bridge in Rust built for the Internet of Things 19/20 course during the Engineering in Computer Science Master's Degree. 
+A bridge between the MQTT broker of TTN and ThingsBoard in Rust built for the Internet of Things 19/20 course during the Engineering in Computer Science Master's Degree. 
 
 ## LinkedIn Profile
 
@@ -16,25 +16,25 @@ An MQTT transparent bridge in Rust built for the Internet of Things 19/20 course
 
 ```
 USAGE:
-    rusty-mqtt [OPTIONS] --rsmb-port <RPORT> --server <SERVER> --topic <TOPIC> --username <USER_NAME>
+    rusty-mqtt [OPTIONS] --TTN-port <RPORT> --server <SERVER> --topic <TOPIC> --username <USER_NAME>
 
 FLAGS:
     -h, --help       Prints help information
     -V, --version    Prints version information
 
 OPTIONS:
-    -k, --rsmb-port <RPORT>       RSMB MQTT server port
-    -r, --rsmb-address <RSMB>     RSMB MQTT server address
+    -k, --TTN-port <RPORT>        TTN MQTT server port
     -s, --server <SERVER>         ThingsBoard MQTT server address [default: 0.0.0.0]
-    -t, --topic <TOPIC>           RSMB topic to subscribe
+    -t, --topic <TOPIC>           TTN topic to subscribe
     -p, --port <TPORT>            ThingsBoard MQTT Server port [default: 1883]
+    -r, --TTN-address <TTN>       TTN MQTT server address [default: eu.thethings.network]
     -u, --username <USER_NAME>    ThingsBoard gateway device ACCESS_TOKEN
 ```
 
 ### Example
 
 ```
-$ cargo run -- -k 1888 -t "sensors/values" -u "8gPybcTugiggd2FVtD0i"
+$ cargo run -- -k 1883 -t "loraiotlab/devices/+/up" -u "8gPybcTugiggd2FVtD0i" -r "eu.thethings.network"
 ```
 
 ## Blog Post
@@ -43,11 +43,15 @@ Assignment 1: [The MQTT protocol using ThingsBoard, Rust and React](https://medi
 
 Assignment 2: [How to setup an Async MQTT transparent bridge in Rust](https://medium.com/@LRazovic/how-to-setup-an-async-mqtt-transparent-bridge-in-rust-4614ad705138)
 
+Assignment 3: [The LoRaWAN communication protocol using RIOT, ThingsBoard and Rust](https://medium.com/@LRazovic/the-lorawan-communication-protocol-using-riot-thingsboard-and-rust-bebe76b20177)
+
 ## YouTube Video
 
 Assignment 1: [https://www.youtube.com/watch?v=6th-NgDjC1w&feature=youtu.be](https://www.youtube.com/watch?v=6th-NgDjC1w&feature=youtu.be)
 
 Assignment 2: [https://youtu.be/JiG8LkaZDtQ](https://youtu.be/JiG8LkaZDtQ)
+
+Assignment 3: [](TODO)
 
 ## The "Subscriber"
 
