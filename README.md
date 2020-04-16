@@ -30,6 +30,7 @@ OPTIONS:
     -r, --TTN-address <TTN>       TTN MQTT server address [default: eu.thethings.network]
     -u, --username <USER_NAME>    ThingsBoard gateway device ACCESS_TOKEN
 ```
+In the `src` folder you need a file `credentials.rs` containing the *App ID* and the *App Access Key* from the **TTN Application Console**. You can modify and rename the `sample_credentials.rs` file as reference.
 
 ### Example
 
