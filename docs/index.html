@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Generic Sensors Test</title>
+    <script src="gsensors.js" type="module"></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/7.0.0/math.min.js"
+      integrity="sha256-DLPhgKjTSFfJtfrCLZC7Itf93nhFlR4TWisvYeDFLFU="
+      crossorigin="anonymous"
+    ></script>
+  </head>
+  <body style="padding: 1rem;">
+    <h2 style="color: rosybrown;">Generic Sensors API</h2>
+    <div>
+      <p>
+        <span>Accelerator along X-axis:</span>
+        <span id="x">0</span>
+      </p>
+      <p>
+        <span>Accelerator along Y-axis:</span>
+        <span id="y">0</span>
+      </p>
+      <p>
+        <span>Accelerator along Z-axis:</span>
+        <span id="z">0</span>
+      </p>
+      <p>
+        <span id="error_name"></span>
+        <span id="error_message"></span>
+      </p>
+      <form>
+        <label for="at">Access Token</label><br />
+        <input type="text" id="at" name="at" /><br />
+        <input type="button" name="button_1" value="Start" id="start" />
+        <input type="button" name="button_2" value="Stop" id="stop" />
+      </form>
+      <h2 style="color: rosybrown;">Status:</h2>
+      <span id="status"></span>
+    </div>
+  </body>
+</html>
