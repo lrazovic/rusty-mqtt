@@ -6,21 +6,15 @@ export const makePost = function (url, body) {
       "Content-type": "application/json",
     },
     body: body,
-  })
-    .then((response) => {
-      console.log(response);
-    })
-    .catch(function (error) {
-      console.log("Request failed", error);
-    });
+  }).catch(function (error) {
+    console.log("Request failed", error);
+  });
 };
 
-export const setActivity = function (array, x, y, z) {
-  let mat = arrayToMatrix(array, 4);
-  let rotMatrix = rotationMatrix(mat);
-  let velocity = [x, y, z];
-  let final = math.multiply(rotMatrix, velocity);
-  return final;
+export const setActivity = function (x, y, z) {
+  let norm = Math.sqrt(x * x + y * y + z * z);
+  if (norm > 0.5) return "Moving";
+  else return "Still";
 };
 
 const arrayToMatrix = function (array, n) {

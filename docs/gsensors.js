@@ -1,4 +1,4 @@
-import { makePost } from "./utils.js";
+import { makePost, setActivity } from "./utils.js";
 
 let accelerometer = new LinearAccelerationSensor({ frequency: 1 });
 //const array = new Float32Array(16);
@@ -18,10 +18,14 @@ function start() {
     document.getElementById("y").innerHTML = y;
     document.getElementById("z").innerHTML = z;
     let telemetry = { x: x, y: y, z: z };
-    //let status = { status: setActivity(array, x, y, x) };
+    let activity = setActivity(x, y, x);
+    let status = { status: activity };
+    // Cloud based Model
     makePost(url, JSON.stringify(telemetry));
-    //makePost(url, JSON.stringify(status));
-    //document.getElementById("status").innerHTML = setActivity(array, x, y, x);
+
+    // Edge based Model
+    makePost(url, JSON.stringify(status));
+    document.getElementById("status").innerHTML = activity;
   };
 
   accelerometer.onerror = (event) => {
