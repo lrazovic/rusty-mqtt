@@ -1,8 +1,8 @@
-import { makePost, setActivity } from "./utils.js";
+import { makePost } from "./utils.js";
 
 let accelerometer = new LinearAccelerationSensor({ frequency: 1 });
 //const array = new Float32Array(16);
-const options = { frequency: 1, referenceFrame: "device" };
+// /const options = { frequency: 1, referenceFrame: "device" };
 //const sensor = new AbsoluteOrientationSensor(options);
 
 function start() {

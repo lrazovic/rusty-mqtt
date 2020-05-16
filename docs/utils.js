@@ -1,4 +1,4 @@
-export const thinhsboardPost = function (url, body) {
+export const makePost = function (url, body) {
   fetch(url, {
     method: "POST",
     mode: "no-cors",
@@ -9,23 +9,6 @@ export const thinhsboardPost = function (url, body) {
   })
     .then((response) => {
       console.log(response);
-    })
-    .catch(function (error) {
-      console.log("Request failed", error);
-    });
-};
-
-export const localPost = function (body) {
-  fetch("/", {
-    method: "POST",
-    mode: "no-cors",
-    headers: {
-      "Content-type": "application/json",
-    },
-    body: body,
-  })
-    .then((response) => {
-      return response;
     })
     .catch(function (error) {
       console.log("Request failed", error);
