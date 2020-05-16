@@ -19,7 +19,7 @@ function start() {
     document.getElementById("z").innerHTML = z;
     let telemetry = { x: x, y: y, z: z };
     let activity = setActivity(x, y, x);
-    let status = { status: activity };
+    let status = { edgeStatus: activity };
     // Cloud based Model
     makePost(url, JSON.stringify(telemetry));
 
