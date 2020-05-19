@@ -19,7 +19,7 @@ function start() {
 
     // The JSON objects sent to ThingsBoard
     let telemetry = { x: x, y: y, z: z };
-    let activity = setActivity(x, y, x);
+    let activity = setActivity(x, y, z);
     let status = { edgeStatus: activity };
 
     // Cloud based Model
