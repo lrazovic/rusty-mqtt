@@ -1,6 +1,6 @@
 # rusty-mqtt
 
-A bridge between the MQTT broker of TTN and ThingsBoard in Rust built for the Internet of Things 19/20 course during the Engineering in Computer Science Master's Degree. 
+A bridge between the MQTT broker of TTN and ThingsBoard in Rust built for the Internet of Things 19/20 course during the Engineering in Computer Science Master's Degree.
 
 ## LinkedIn Profile
 
@@ -31,7 +31,8 @@ OPTIONS:
     -r, --TTN-address <TTN>       TTN MQTT server address [default: eu.thethings.network]
     -u, --username <USER_NAME>    ThingsBoard gateway device ACCESS_TOKEN
 ```
-In the `src` folder you need a file `credentials.rs` containing the *App ID* and the *App Access Key* from the **TTN Application Console**. You can modify and rename the `sample_credentials.rs` file as reference.
+
+In the `src` folder you need a file `credentials.rs` containing the _App ID_ and the _App Access Key_ from the **TTN Application Console**. You can modify and rename the `sample_credentials.rs` file as reference.
 
 ### Example
 
