@@ -2,7 +2,7 @@ import { makePost, setActivity } from "./utils.js";
 
 function start() {
   // Create the Sensor object
-  let accelerometer = new LinearAccelerationSensor({ frequency: 1 });
+  var accelerometer = new LinearAccelerationSensor({ frequency: 1 });
   let at = document.getElementById("at").value;
   // The ThingsBoard telemetry URL
   let url = "https://demo.thingsboard.io/api/v1/" + at + "/telemetry";
