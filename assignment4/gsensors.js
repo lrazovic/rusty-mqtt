@@ -1,10 +1,11 @@
 import { makePost, setActivity } from "./utils.js";
 
+// Create the Sensor object
+var accelerometer = new LinearAccelerationSensor({ frequency: 1 });
+
 function start() {
-  // Create the Sensor object
-  let accelerometer = new LinearAccelerationSensor({ frequency: 1 });
-  let at = document.getElementById("at").value;
   // The ThingsBoard telemetry URL
+  let at = document.getElementById("at").value;
   let url = "https://demo.thingsboard.io/api/v1/" + at + "/telemetry";
   // Start the sensor
   accelerometer.start();
@@ -19,7 +20,7 @@ function start() {
 
     // The JSON objects sent to ThingsBoard
     let telemetry = { x: x, y: y, z: z };
-    let activity = setActivity(x, y, x);
+    let activity = setActivity(x, y, z);
     let status = { edgeStatus: activity };
 
     // Cloud based Model
