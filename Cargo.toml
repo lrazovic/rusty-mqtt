@@ -1,18 +1,18 @@
 [package]
 name = "rusty-mqtt"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Leonardo Razovic <leorazzo@gmail.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde = { version = "1.0.106", features = ["derive"] }
-serde_json = "1.0.51"
-log = "0.4.8"
-env_logger = "0.7.1"
-uuid = { version = "0.8.1", features = ["v4"] }
-clap = "2.33.0"
-mqtt-protocol = { version = "0.8.1", features = ["async"] }
-tokio = { version = "0.2.16", features = ["full"] }
-futures = "0.3.4"
+serde = { version = "1.0.125", features = ["derive"] }
+serde_json = "1.0.64"
+log = "0.4.14"
+env_logger = "0.8.3"
+uuid = { version = "0.8.2", features = ["v4"] }
+clap = "2.33.3"
+mqtt-protocol = { version = "0.10.0", features = ["async"] }
+tokio = { version = "1.4.0", features = ["full"] }
+futures = "0.3.13"
