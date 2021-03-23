@@ -1,20 +1,13 @@
 use clap::{App, Arg};
+use futures::join;
 use log::{error, info, trace};
 use mqtt::control::variable_header::ConnectReturnCode;
-use mqtt::packet::*;
-use mqtt::TopicFilter;
-use mqtt::TopicName;
-use mqtt::{Decodable, Encodable, QualityOfService};
-use std::env;
-use std::io::Write;
-use std::net;
-use std::str;
-use std::{collections::HashMap, time::Duration};
+use mqtt::{packet::*, Decodable, Encodable, QualityOfService, TopicFilter, TopicName};
+use std::{collections::HashMap, str, time::Duration};
+use std::{env, io::Write};
+use std::{net, process};
+use tokio::{io::AsyncWriteExt, net::TcpStream};
 
-use futures::join;
-use futures::prelude::*;
-use tokio::net::TcpStream;
-use tokio::prelude::*;
 mod credentials;
 mod utils;
 
@@ -30,7 +23,7 @@ async fn main() {
     // Parse arguments from CLI
     let matches = App::new("rusty-mqtt")
         .author("Leonardo Razovic <lrazovic@gmail.com>")
-        .version("0.3")
+        .version("0.4")
         .arg(
             Arg::with_name("SERVER")
                 .short("s")
@@ -128,9 +121,7 @@ async fn main() {
 
     // Create and Send an initial MQTT CONNECT packet to TTN.
     let credentials = credentials::get_credentials();
-    let mut conn = ConnectPacket::new("MQTT", &client_id);
-    conn.set_clean_session(true);
-    conn.set_keep_alive(10);
+    let mut conn = ConnectPacket::new(&client_id);
     conn.set_password(Some(credentials.appaccesskey));
     conn.set_user_name(Some(credentials.appid));
     let mut buf = Vec::new();
@@ -139,19 +130,19 @@ async fn main() {
 
     // Check if the connection is accepted
     let connack = ConnackPacket::decode(&mut ttn_stream).unwrap();
-    trace!("CONNACK {:?}", connack);
 
     if connack.connect_return_code() != ConnectReturnCode::ConnectionAccepted {
-        panic!(
-            "Failed to connect to server, return code {:?}",
+        error!(
+            "Failed to connect to TTN. Error: {:?}",
             connack.connect_return_code()
         );
+        process::exit(1);
     }
 
     info!("Successfully connected to TTN @ {}", url);
 
     // Create and send an initial MQTT CONNECT packet to Thingsboard.
-    let mut conn = ConnectPacket::new("MQTT", client_id);
+    let mut conn = ConnectPacket::new(client_id);
     conn.set_clean_session(true);
     conn.set_user_name(Some(user_name));
     let mut buf = Vec::new();
@@ -160,13 +151,18 @@ async fn main() {
 
     // Check if the connection is accepted
     let connack = ConnackPacket::decode(&mut thingsboard_stream).unwrap();
-    if connack.connect_return_code() != ConnectReturnCode::ConnectionAccepted {
-        panic!(
-            "Failed to connect to server, return code {:?}",
-            connack.connect_return_code()
-        );
+    match connack.connect_return_code() {
+        ConnectReturnCode::ConnectionAccepted => {
+            info!("Successfully connected to Thingsboard @ {}", host);
+        }
+        _ => {
+            error!(
+                "Failed to connect to Thingsboard. Error: {:?}",
+                connack.connect_return_code()
+            );
+            process::exit(1);
+        }
     }
-    info!("Successfully connected to Thingsboard @ {}", host);
 
     // Create a TopicFilter to Subscribe
     let mut channel_filters: Vec<(TopicFilter, QualityOfService)> = Vec::new();
@@ -197,9 +193,9 @@ async fn main() {
 
         if let VariablePacket::SubackPacket(ref ack) = packet {
             if ack.packet_identifier() != 10 {
-                panic!("SUBACK packet identifier not match");
+                error!("SUBACK packet identifier not match");
+                process::exit(1);
             }
-
             info!("Subscribed!");
             break;
         }
@@ -209,16 +205,15 @@ async fn main() {
     let mut stream = TcpStream::from_std(ttn_stream).unwrap();
     let (mut mqtt_read, mut mqtt_write) = stream.split();
 
-    let ping_time = Duration::new((10) as u64, 0);
+    let ping_time = Duration::new(120, 0);
     let mut ping_stream = tokio::time::interval(ping_time);
 
     // PING TTN
     let ping_sender = async move {
-        while let Some(_) = ping_stream.next().await {
+        loop {
+            ping_stream.tick().await;
             info!("Sending PINGREQ to TTN");
-
             let pingreq_packet = PingreqPacket::new();
-
             let mut buf = Vec::new();
             pingreq_packet.encode(&mut buf).unwrap();
             mqtt_write.write_all(&buf).await.unwrap();
@@ -233,7 +228,6 @@ async fn main() {
     let receiver = async move {
         while let Ok(packet) = VariablePacket::parse(&mut mqtt_read).await {
             trace!("PACKET {:?}", packet);
-
             match packet {
                 VariablePacket::PingrespPacket(..) => {
                     info!("Receiving PINGRESP from TTN ..");
@@ -248,6 +242,17 @@ async fn main() {
 
                     let device_name = format!("station_{}", &jsonvalue["dev_id"].as_str().unwrap());
                     let payload_fields = &jsonvalue["payload_fields"]["result"];
+
+                    // Works with a payload decoder format on TTN like
+                    // function Decoder(bytes, port) {
+                    //    var result = "";
+                    //    for (var byte in bytes){
+                    //      result += String.fromCharCode(bytes[byte]);
+                    //    } 
+                    //    return {"result": result };
+                    // }
+
+                    // A test payload, in bytes, can be "38 30 20 33 30 20 32 31 33 20 33 35 20 34 35"
 
                     // Get the 5 values from the JSON
                     let raw_str_values: Vec<&str> = payload_fields
