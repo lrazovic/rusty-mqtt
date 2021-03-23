@@ -35,11 +35,21 @@ OPTIONS:
 ```
 
 In the `src` folder you need a file `credentials.rs` containing the _App ID_ and the _App Access Key_ from the **TTN Application Console**. You can modify and rename the `sample_credentials.rs` file as reference.
+In the **TTN Application Console** we must specify a custom decoder function like: 
+```js
+function Decoder(bytes, port) {
+  var result = "";
+  for (var byte in bytes){
+    result += String.fromCharCode(bytes[byte]);
+  } 
+  return {"result": result };
+}
+```
 
 #### Example
 
 ```
-$ cargo run -- -k 1883 -t "loraiotlab/devices/+/up" -u "8gPybcTugiggd2FVtD0i" -r "eu.thethings.network"
+$ cargo run --release -- -k 1883 -t "+/devices/+/up" -u "A1_TEST_TOKEN" -r "eu.thethings.network"
 ```
 
 ## Assignment 4
