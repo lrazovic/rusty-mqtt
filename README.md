@@ -11,7 +11,7 @@ A bridge between the MQTT broker of TTN and ThingsBoard in Rust built for the In
 ### Prerequisites
 
 1. Rust, you can install it using [rustup](https://rustup.rs/)
-2. [ThingsBoard](https://thingsboard.io/docs/user-guide/install/installation-options/)
+2. A working instance of [ThingsBoard](https://thingsboard.io/docs/user-guide/install/installation-options/)
 3. A [B-L072Z-LRWAN1 LoRa kit](https://www.st.com/en/evaluation-tools/b-l072z-lrwan1.html) or an [IoT-LAB](https://www.iot-lab.info/) Account
 4. An account on [The Things Network](https://www.thethingsnetwork.org/)
 
@@ -26,11 +26,11 @@ FLAGS:
     -V, --version    Prints version information
 
 OPTIONS:
-    -k, --TTN-port <RPORT>        TTN MQTT server port
+    -k, --TTN-port <RPORT>        TTN MQTT server port [default: 1883]
     -s, --server <SERVER>         ThingsBoard MQTT server address [default: 0.0.0.0]
     -t, --topic <TOPIC>           TTN topic to subscribe
     -p, --port <TPORT>            ThingsBoard MQTT Server port [default: 1883]
-    -r, --TTN-address <TTN>       TTN MQTT server address [default: eu.thethings.network]
+    -r, --TTN-address <TTN>       TTN MQTT server address [default: eu1.thethings.network]
     -u, --username <USER_NAME>    ThingsBoard gateway device ACCESS_TOKEN
 ```
 
@@ -48,9 +48,12 @@ function Decoder(bytes, port) {
 
 #### Example
 
+```bash
+cargo run --release -- -t "#" -u "A1_TEST_TOKEN" -r "eu1.cloud.thethings.network"
 ```
-$ cargo run --release -- -k 1883 -t "+/devices/+/up" -u "A1_TEST_TOKEN" -r "eu.thethings.network"
-```
+#### Usefull Links
+
+* The Things Network [MQTT Documentation](https://www.thethingsnetwork.org/docs/applications/mqtt/api/)
 
 ## Assignment 4
 

@@ -1,12 +1,18 @@
-use clap::{App, Arg};
 use futures::join;
 use log::{error, info, trace};
 use mqtt::control::variable_header::ConnectReturnCode;
-use mqtt::{packet::*, Decodable, Encodable, QualityOfService, TopicFilter, TopicName};
+use mqtt::{
+    packet::{
+        ConnackPacket, ConnectPacket, Packet, PingreqPacket, SubscribePacket, VariablePacket,
+    },
+    Decodable, Encodable, QualityOfService, TopicFilter, TopicName,
+};
 use std::{collections::HashMap, str, time::Duration};
 use std::{env, io::Write};
 use std::{net, process};
 use tokio::{io::AsyncWriteExt, net::TcpStream};
+
+use crate::utils::parse_argument;
 
 mod credentials;
 mod utils;
@@ -21,59 +27,7 @@ async fn main() {
     env_logger::init();
 
     // Parse arguments from CLI
-    let matches = App::new("rusty-mqtt")
-        .author("Leonardo Razovic <lrazovic@gmail.com>")
-        .version("0.4")
-        .arg(
-            Arg::with_name("SERVER")
-                .short("s")
-                .long("server")
-                .default_value("0.0.0.0")
-                .takes_value(true)
-                .required(true)
-                .help("ThingsBoard MQTT server address"),
-        )
-        .arg(
-            Arg::with_name("USER_NAME")
-                .short("u")
-                .long("username")
-                .required(true)
-                .takes_value(true)
-                .help("ThingsBoard gateway device ACCESS_TOKEN"),
-        )
-        .arg(
-            Arg::with_name("TPORT")
-                .short("p")
-                .long("port")
-                .default_value("1883")
-                .takes_value(true)
-                .help("ThingsBoard MQTT Server port"),
-        )
-        .arg(
-            Arg::with_name("TOPIC")
-                .short("t")
-                .long("topic")
-                .required(true)
-                .takes_value(true)
-                .help("TTN topic to subscribe"),
-        )
-        .arg(
-            Arg::with_name("RPORT")
-                .short("k")
-                .long("TTN-port")
-                .required(true)
-                .takes_value(true)
-                .help("TTN MQTT server port"),
-        )
-        .arg(
-            Arg::with_name("TTN")
-                .short("r")
-                .long("TTN-address")
-                .takes_value(true)
-                .default_value("eu.thethings.network")
-                .help("TTN MQTT server address"),
-        )
-        .get_matches();
+    let matches = parse_argument();
 
     // ThingsBoard server address, default is localhost.
     let server_addr = matches.value_of("SERVER").unwrap();
@@ -83,21 +37,22 @@ async fn main() {
     let host = format!("{}:{}", server_addr, server_port);
 
     // ThingsBoard Gateway Device access_token
-    let user_name = matches.value_of("USER_NAME").map(|x| x.to_owned()).unwrap();
+    let user_name = matches
+        .value_of("USER_NAME")
+        .map(ToString::to_string)
+        .unwrap();
 
     // Device ID
     let client_id = matches
         .value_of("CLIENT_ID")
-        .map(|x| x.to_owned())
-        .unwrap_or_else(utils::generate_client_id);
+        .map_or_else(utils::generate_client_id, ToString::to_string);
 
     let topic_name = matches
         .value_of("TOPIC")
-        .map(|x| x.to_owned())
-        .unwrap_or_else(|| String::from("hello/world"));
+        .map_or_else(|| String::from("hello/world"), ToString::to_string);
 
     // TTN server address, default is eu.thethings.network.
-    let ttn_address = matches.value_of("TTN").map(|x| x.to_owned()).unwrap();
+    let ttn_address = matches.value_of("TTN").map(ToString::to_string).unwrap();
 
     // TTN port address
     let ttn_port: u16 = matches
@@ -111,10 +66,10 @@ async fn main() {
     let url = format!("{}:{}", ttn_address, ttn_port);
     info!("Connecting to TTN @ {} ... ", url);
 
-    //Opens a TCP connection to TTN.
+    // Opens a TCP connection to TTN.
     let mut ttn_stream = net::TcpStream::connect(&url).expect("Can't connect to TTN");
 
-    //Opens a TCP connection to ThingsBoard.
+    // Opens a TCP connection to ThingsBoard.
     info!("Connecting to ThingsBoard @ {:?} ... ", host);
     let mut thingsboard_stream =
         net::TcpStream::connect(&host).expect("Can't connect to ThingsBoard");
@@ -122,8 +77,8 @@ async fn main() {
     // Create and Send an initial MQTT CONNECT packet to TTN.
     let credentials = credentials::get_credentials();
     let mut conn = ConnectPacket::new(&client_id);
-    conn.set_password(Some(credentials.appaccesskey));
-    conn.set_user_name(Some(credentials.appid));
+    conn.set_password(Some(credentials.appaccesskey.to_string()));
+    conn.set_user_name(Some(credentials.appid.to_string()));
     let mut buf = Vec::new();
     conn.encode(&mut buf).unwrap();
     ttn_stream.write_all(&buf[..]).unwrap();
@@ -240,15 +195,18 @@ async fn main() {
                     let jsonvalue: serde_json::Value =
                         serde_json::from_slice(&payload).expect("JSON was not well-formatted");
 
-                    let device_name = format!("station_{}", &jsonvalue["dev_id"].as_str().unwrap());
-                    let payload_fields = &jsonvalue["payload_fields"]["result"];
+                    let device_name = format!(
+                        "station_{}",
+                        &jsonvalue["end_device_ids"]["device_id"].as_str().unwrap()
+                    );
+                    let payload_fields = &jsonvalue["uplink_message"]["decoded_payload"]["result"];
 
                     // Works with a payload decoder format on TTN like
                     // function Decoder(bytes, port) {
                     //    var result = "";
                     //    for (var byte in bytes){
                     //      result += String.fromCharCode(bytes[byte]);
-                    //    } 
+                    //    }
                     //    return {"result": result };
                     // }
 
@@ -265,9 +223,9 @@ async fn main() {
 
                     // Connect Gateway and Device, only if they are not already connected
                     if !connected_device.contains(&device_name) {
-                        let device = utils::Device::new(device_name.clone());
+                        let device = utils::Device::new(&device_name);
                         let message = serde_json::to_string(&device).unwrap();
-                        utils::publish(&mut thingsboard_stream, message, connection_topic.clone());
+                        utils::publish(&mut thingsboard_stream, &message, &connection_topic);
                         connected_device.push(device_name.clone());
                         info!("Gateway and Device {} connected!", device_name);
                     }
@@ -283,12 +241,12 @@ async fn main() {
                     let mut vector_values = Vec::new();
                     let sensor_telemetry = utils::generate_telemtry_packet(values);
                     vector_values.push(sensor_telemetry);
-                    telemetry.insert(device_name.clone(), vector_values);
+                    telemetry.insert(device_name, vector_values);
                     let serialized_telemetry = serde_json::to_string(&telemetry).unwrap();
                     utils::publish(
                         &mut thingsboard_stream,
-                        serialized_telemetry,
-                        telemtry_topic.clone(),
+                        &serialized_telemetry,
+                        &telemtry_topic,
                     );
                 }
 

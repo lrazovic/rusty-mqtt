@@ -14,8 +14,8 @@ impl Credentials {
 
 pub fn get_credentials() -> Credentials {
     //App ID from the TTN Console
-    let appid = String::from("XXXXXXXX");
+    let appid = "app_name";
     //App Access Key from the TTN Console
-    let appaccesskey = String::from("ttn-account-v2.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+    let appaccesskey = "app_access_key";
     Credentials::new(appid, appaccesskey)
 }
