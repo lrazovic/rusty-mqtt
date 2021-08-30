@@ -71,11 +71,20 @@ async fn main() {
 
     // Opens a TCP connection to ThingsBoard.
     info!("Connecting to ThingsBoard @ {:?} ... ", host);
-    let mut thingsboard_stream =
-        net::TcpStream::connect(&host).expect("Can't connect to ThingsBoard");
+    let thingsboard_connection = match net::TcpStream::connect(&host) {
+        Ok(stream) => {
+            info!("Successfully connected to ThingsBoard @ {}", ttn_address);
+            Ok(stream)
+        }
+        Err(e) => {
+            error!("Can't connect to ThingsBoard. Error: {}", e);
+            Err(e)
+        }
+    };
+    let mut thingsboard_stream = thingsboard_connection.unwrap();
 
     // Create and Send an initial MQTT CONNECT packet to TTN.
-    let credentials = credentials::get_credentials();
+    let credentials = credentials::get();
     let mut conn = ConnectPacket::new(&client_id);
     conn.set_password(Some(credentials.appaccesskey.to_string()));
     conn.set_user_name(Some(credentials.appid.to_string()));

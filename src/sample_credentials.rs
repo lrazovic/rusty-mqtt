@@ -1,10 +1,10 @@
-pub struct Credentials {
-    pub appid: String,
-    pub appaccesskey: String,
+pub struct Credentials<'a> {
+    pub appid: &'a str,
+    pub appaccesskey: &'a str,
 }
 
-impl Credentials {
-    pub fn new(appid: String, appaccesskey: String) -> Self {
+impl Credentials<'static> {
+    pub const fn new(appid: &'static str, appaccesskey: &'static str) -> Self {
         Self {
             appid,
             appaccesskey,
@@ -12,10 +12,10 @@ impl Credentials {
     }
 }
 
-pub fn get_credentials() -> Credentials {
-    //App ID from the TTN Console
+pub const fn get() -> Credentials<'static> {
+    // Application ID from the TTN Console
     let appid = "app_name";
-    //App Access Key from the TTN Console
+    // App Access API key from the TTN Console
     let appaccesskey = "app_access_key";
     Credentials::new(appid, appaccesskey)
 }
